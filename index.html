@@ -6,7 +6,12 @@
   <meta name="theme-color" content="#0e7c86">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="여행 플래너">
+  <meta name="description" content="여행마다 동선·지도·환전·정산을 한곳에서">
   <title>여행 플래너</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -184,7 +189,10 @@
       <h1>여행 플래너</h1>
       <p>동선 · 지도 · 환전 · 정산을<br>여행마다 한곳에서</p>
     </div>
-    <button type="button" class="btn primary big" id="btnStart">시작하기</button>
+    <div class="start-actions">
+      <button type="button" class="btn primary big" id="btnStart">시작하기</button>
+      <button type="button" class="link-btn install-btn" hidden>📲 홈 화면에 추가하기</button>
+    </div>
   </section>
 
   <section class="page" id="pageTrips" hidden>
@@ -281,6 +289,7 @@
       <button class="sheet-item" id="btnImportTrip">⬆️ 여행 JSON 가져오기 (공유받은 여행)</button>
       <button class="sheet-item" id="btnBackupAll">💾 전체 백업 (모든 여행)</button>
       <button class="sheet-item" id="btnRestoreAll">♻️ 전체 복원</button>
+      <button class="sheet-item install-btn" hidden>📲 홈 화면에 추가 (앱처럼 쓰기)</button>
       <button class="sheet-item cancel" data-close>닫기</button>
     </div>
   </div>
@@ -308,6 +317,7 @@
           </div>
           <p class="hint">날짜는 2026-12-10, 12/10, Day 1, 1일차 모두 돼요. 날짜를 비우면 윗줄 날짜, 좌표를 비우면 장소명으로 자동 검색해요.</p>
         </div>
+        <div class="sheet-buttons"><button type="button" class="btn ghost" data-close style="flex:1">닫기</button></div>
       </div>
 
       <div id="fiPreview" hidden>
@@ -327,6 +337,17 @@
           <button type="button" class="btn primary" id="btnFiAdd">추가</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- 홈 화면 추가 안내 -->
+  <div class="sheet-backdrop" id="installSheet" hidden>
+    <div class="sheet">
+      <div class="sheet-grip"></div>
+      <h2>홈 화면에 추가</h2>
+      <div class="install-help" id="installHelp"></div>
+      <p class="hint">추가하면 앱처럼 전체 화면으로 열리고, 인터넷이 없어도 저장된 일정·환율·정산을 볼 수 있어요.</p>
+      <div class="sheet-buttons"><button type="button" class="btn ghost" data-close style="flex:1">확인</button></div>
     </div>
   </div>
 
@@ -528,5 +549,6 @@
 <script src="settle.js"></script>
 <script src="import.js"></script>
 <script src="trips-ui.js"></script>
+<script src="pwa.js"></script>
 </body>
 </html>
