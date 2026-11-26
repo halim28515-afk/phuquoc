@@ -402,20 +402,33 @@
   }
   $('#btnExport').addEventListener('click', () => {
     closeSheet('#menuSheet');
-    showExport('이 여행 내보내기', TS.exportTrip(state.id), 'trip-' + (state.city || state.name || 'export'));
+    showExport('이 여행 내보내기', TS.exportTrip(state.id), 'trip-' + state.start);
   });
-  $('#btnDownload').addEventListener('click', () => {
-    const blob = new Blob([$('#exportText').value], { type: 'application/json' });
+  // 파일 저장: Claude 미리보기 안에서는 저장 권한을 쓰고, 일반 브라우저에서는 다운로드 링크
+  async function saveFile(filename, blob) {
+    try {
+      const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+      if (dl) {
+        await dl.save({ filename, data: blob });
+        toast('파일을 저장했어요');
+        return;
+      }
+    } catch (e) {
+      if (e && (e.code === 'declined' || e.code === 'not_granted')) { toast('저장을 취소했어요'); return; }
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     a.href = url;
-    a.download = `${exportName.replace(/[\\/:*?"<>|\s]+/g, '-')}-${stamp}.json`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('파일 저장을 요청했어요. 안 되면 복사를 쓰세요');
+  }
+  $('#btnDownload').addEventListener('click', () => {
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    saveFile(`${exportName.replace(/[\\/:*?"<>|\s]+/g, '-')}-${stamp}.json`, new Blob([$('#exportText').value], { type: 'application/json' }));
   });
   $('#btnCopy').addEventListener('click', () => {
     const box = $('#exportText');
@@ -470,7 +483,7 @@
     get currentDay() { return currentDay; },
     get currentTab() { return currentTab; },
     tripDates, allDates, dateOptions, esc, dayInfo, toast, ask, save, render, findItem,
-    switchTrip, clearTrip, selectTab, showExport, showImport,
+    switchTrip, clearTrip, selectTab, showExport, showImport, saveFile,
     openEditor: item => openEditor(item),
     openSheet, closeSheet,
     onRender: fn => renderHooks.push(fn),

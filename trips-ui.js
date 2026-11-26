@@ -114,7 +114,7 @@
       renderList();
       PQ.toast(`‘${c.name}’을 만들었어요`);
     } else if (act === 'export') {
-      PQ.showExport(`‘${t.name}’ 내보내기`, TS.exportTrip(t.id), 'trip-' + (t.city || t.name));
+      PQ.showExport(`‘${t.name}’ 내보내기`, TS.exportTrip(t.id), 'trip-' + t.start);
     } else if (act === 'delete') {
       const items = itemCount(t), ex = t.expenses.length;
       if (!await PQ.ask(`‘${t.name}’ 여행을 삭제할까요?`, '삭제', true)) return;

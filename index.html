@@ -285,11 +285,57 @@
     </div>
   </div>
 
+  <!-- 일정 파일 가져오기 -->
+  <div class="sheet-backdrop" id="fileSheet" hidden>
+    <div class="sheet file-sheet">
+      <div class="sheet-grip"></div>
+      <h2>일정 파일 가져오기</h2>
+      <p class="hint" id="fiTripRange"></p>
+
+      <div id="fiPick">
+        <button type="button" class="btn primary big" id="btnFiPick">📄 파일 선택 (엑셀 xlsx · CSV)</button>
+        <input type="file" id="fiFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.txt,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+        <div class="fi-or"><span>또는 엑셀·구글 시트에서 복사해 붙여넣기</span></div>
+        <textarea id="fiPaste" class="json-box" rows="5" placeholder="날짜	시간	장소	메모	위도	경도"></textarea>
+        <button type="button" class="btn ghost" id="btnFiPaste" style="width:100%;margin-top:8px">붙여넣은 표 읽기</button>
+        <p class="fi-msg" id="fiMsg" role="status"></p>
+        <div class="fi-tpl">
+          <div class="fi-tpl-t">템플릿 받기 <small>날짜 · 시간 · 장소 · 메모 · 위도 · 경도</small></div>
+          <div class="fi-tpl-b">
+            <button type="button" class="btn ghost small" id="btnTplXlsx">엑셀</button>
+            <button type="button" class="btn ghost small" id="btnTplCsv">CSV</button>
+            <button type="button" class="btn ghost small" id="btnTplCopy">복사</button>
+          </div>
+          <p class="hint">날짜는 2026-12-10, 12/10, Day 1, 1일차 모두 돼요. 날짜를 비우면 윗줄 날짜, 좌표를 비우면 장소명으로 자동 검색해요.</p>
+        </div>
+      </div>
+
+      <div id="fiPreview" hidden>
+        <div class="fi-head">
+          <div><b id="fiSummary"></b><div class="hint" id="fiSource"></div></div>
+          <button type="button" class="link-btn" id="btnFiBack">다시 고르기</button>
+        </div>
+        <div class="fi-outside" id="fiOutside" hidden></div>
+        <div class="fi-geo" id="fiGeoBox" hidden>
+          <span id="fiGeoCount"></span>
+          <button type="button" class="btn ghost small" id="btnFiGeo">좌표 자동 검색</button>
+        </div>
+        <ul class="fi-list" id="fiList"></ul>
+        <label class="fi-replace"><input type="checkbox" id="fiReplace"> 기존 일정 지우고 바꾸기 <small>(체크 안 하면 뒤에 추가)</small></label>
+        <div class="sheet-buttons">
+          <button type="button" class="btn ghost" data-close>취소</button>
+          <button type="button" class="btn primary" id="btnFiAdd">추가</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 메뉴 시트 -->
   <div class="sheet-backdrop" id="menuSheet" hidden>
     <div class="sheet">
       <div class="sheet-grip"></div>
       <h2>이 여행</h2>
+      <button class="sheet-item" id="btnFileImport">📄 일정 파일 가져오기 (엑셀·CSV)</button>
       <button class="sheet-item" id="btnSortTime">⏱️ 이 날 일정 시간순 정렬</button>
       <button class="sheet-item" id="btnFare">🚕 그랩 요금 기준 설정</button>
       <button class="sheet-item" id="btnExport">⬇️ 이 여행 JSON 내보내기 (다른 폰과 공유)</button>
@@ -480,6 +526,7 @@
 <script src="map.js"></script>
 <script src="fx.js"></script>
 <script src="settle.js"></script>
+<script src="import.js"></script>
 <script src="trips-ui.js"></script>
 </body>
 </html>
