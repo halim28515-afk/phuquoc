@@ -109,7 +109,48 @@
 
       <!-- 정산 -->
       <section class="tab-panel" id="tab-settle">
-        <div class="placeholder"><div class="ph-icon">🧾</div><p>정산 탭은 준비 중이에요.</p></div>
+        <div class="st">
+          <div class="st-people">
+            <div class="st-people-head">
+              <h3>참여자 <span id="stPeopleCount"></span></h3>
+              <button type="button" class="btn ghost small" id="btnPeople">편집</button>
+            </div>
+            <div class="st-chips" id="stPeopleChips"></div>
+          </div>
+
+          <div class="st-empty" id="stEmpty" hidden></div>
+
+          <div id="stResult">
+            <div class="st-card st-total">
+              <div class="muted">총 지출</div>
+              <div class="st-big" id="stTotal">0원</div>
+              <div class="st-note" id="stRateNote"></div>
+            </div>
+
+            <div class="st-card">
+              <h3>송금하기 <span class="sub" id="stTransferCount"></span></h3>
+              <ul class="st-transfers" id="stTransfers"></ul>
+            </div>
+
+            <div class="st-card">
+              <h3>1인당 부담액</h3>
+              <div class="st-table-wrap"><table class="st-table" id="stPerPerson"></table></div>
+            </div>
+
+            <div class="st-card">
+              <div class="seg" role="tablist" aria-label="합계 기준">
+                <button type="button" role="tab" class="on" data-sum="cat" id="stSumCat">카테고리별</button>
+                <button type="button" role="tab" data-sum="date" id="stSumDate">날짜별</button>
+              </div>
+              <ul class="st-bars" id="stSums"></ul>
+            </div>
+
+            <div class="st-card">
+              <h3>지출 내역 <span class="sub" id="stExpCount"></span></h3>
+              <ul class="st-expenses" id="stExpenses"></ul>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -242,6 +283,61 @@
     </form>
   </div>
 
+  <!-- 지출 편집 시트 -->
+  <div class="sheet-backdrop" id="expSheet" hidden>
+    <form class="sheet" id="expForm" autocomplete="off">
+      <div class="sheet-grip"></div>
+      <h2 id="expTitle">지출 추가</h2>
+      <label>항목 <span class="req">*</span>
+        <input type="text" id="eTitle" maxlength="60" placeholder="예) 해산물 저녁">
+      </label>
+      <label for="eAmount">금액 <span class="req">*</span></label>
+      <div class="amount-row">
+        <input type="text" id="eAmount" inputmode="text" placeholder="150k = 150,000">
+        <div class="seg cur-seg" id="eCurSeg">
+          <button type="button" data-cur="VND">VND</button>
+          <button type="button" data-cur="KRW">KRW</button>
+        </div>
+      </div>
+      <p class="hint" id="eKrwHint"></p>
+      <div class="field-label">낸 사람</div>
+      <div class="pick" id="ePayer"></div>
+      <div class="field-label">나눌 사람 <button type="button" class="link-btn" id="eSplitAll">전체 선택</button></div>
+      <div class="pick" id="eSplit"></div>
+      <div class="field-label">카테고리</div>
+      <div class="pick" id="eCat"></div>
+      <div class="row2">
+        <label>날짜
+          <select id="eDate"></select>
+        </label>
+        <label>연결된 일정
+          <select id="eItem"></select>
+        </label>
+      </div>
+      <div class="sheet-buttons">
+        <button type="button" class="btn danger" id="btnExpDelete" hidden>삭제</button>
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 참여자 편집 시트 -->
+  <div class="sheet-backdrop" id="peopleSheet" hidden>
+    <div class="sheet">
+      <div class="sheet-grip"></div>
+      <h2>참여자</h2>
+      <ul class="people-list" id="peopleList"></ul>
+      <form class="people-add" id="peopleAdd">
+        <input type="text" id="newPerson" maxlength="20" placeholder="이름 입력" autocomplete="off">
+        <button type="submit" class="btn primary">추가</button>
+      </form>
+      <div class="sheet-buttons">
+        <button type="button" class="btn ghost" data-close style="flex:1">완료</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 확인 대화상자 -->
   <div class="sheet-backdrop center" id="askSheet" hidden>
     <div class="dialog" role="alertdialog" aria-labelledby="askMsg">
@@ -261,5 +357,6 @@
 <script src="app.js"></script>
 <script src="map.js"></script>
 <script src="fx.js"></script>
+<script src="settle.js"></script>
 </body>
 </html>

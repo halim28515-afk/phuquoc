@@ -77,6 +77,8 @@
     if (raw.sample === true) data.sample = true;
     if (raw.fare && typeof raw.fare === 'object') data.fare = raw.fare; // 그랩 요금 설정 (map.js에서 검증)
     if (raw.fx && typeof raw.fx === 'object') data.fx = raw.fx;         // 환율 설정 (fx.js에서 검증)
+    if (Array.isArray(raw.people)) data.people = raw.people;            // 정산 참여자 (settle.js에서 검증)
+    if (Array.isArray(raw.expenses)) data.expenses = raw.expenses;      // 지출 내역 (settle.js에서 검증)
     return data;
   }
 
@@ -215,8 +217,12 @@
           <div class="place"><span class="idx">${i + 1}</span>${esc(it.place)}</div>
           ${it.memo ? `<div class="memo">${esc(it.memo)}</div>` : ''}
           ${coord}
+          ${window.PQ && PQ.linkedSpent ? PQ.linkedSpent(it.id) : ''}
         </div>
-        <div class="handle" aria-label="순서 변경">≡</div>
+        <div class="card-side">
+          <button type="button" class="card-exp" data-exp="${esc(it.id)}" aria-label="이 일정에 지출 추가">💸</button>
+          <div class="handle" aria-label="순서 변경">≡</div>
+        </div>
       </li>`;
     }).join('');
     $('#emptyState').hidden = list.length > 0;
@@ -377,6 +383,8 @@
   }));
 
   $('#cardList').addEventListener('click', e => {
+    const exp = e.target.closest('.card-exp');
+    if (exp) { if (PQ.openExpense) PQ.openExpense(null, { itemId: exp.dataset.exp, date: currentDay }); return; }
     if (e.target.closest('.handle') || e.target.closest('a')) return;
     const card = e.target.closest('.card');
     if (!card) return;
@@ -384,7 +392,10 @@
     if (found) openEditor(found.item);
   });
 
-  $('#btnAdd').addEventListener('click', () => openEditor(null));
+  $('#btnAdd').addEventListener('click', () => {
+    if (currentTab === 'settle' && PQ.openExpense) PQ.openExpense(null, { date: currentDay });
+    else openEditor(null);
+  });
   let currentTab = 'route';
   $('#btnMenu').addEventListener('click', () => {
     if (currentTab === 'map' && window.PQ.openFareSettings) window.PQ.openFareSettings();
@@ -393,10 +404,10 @@
 
   $('#btnSampleClear').addEventListener('click', async () => {
     if (!await ask('예시 일정을 모두 지우고 빈 일정으로 시작할까요?', '지우기', true)) return;
-    const { fare, fx } = state;
-    state = emptyData();
-    if (fare) state.fare = fare;
-    if (fx) state.fx = fx;
+    // 일정만 지우고 요금·환율 설정, 정산 데이터는 유지
+    const keep = {};
+    ['fare', 'fx', 'people', 'expenses'].forEach(k => { if (state[k]) keep[k] = state[k]; });
+    state = Object.assign(emptyData(), keep);
     save();
     render();
     toast('예시 일정을 지웠어요');
@@ -478,7 +489,7 @@
     const count = countAll(data);
     if (!await ask(`일정 ${count}개를 가져와요. 현재 일정은 모두 바뀌어요. 계속할까요?`, '가져오기')) return;
     if (!data.fare && state.fare) data.fare = state.fare; // 파일에 설정이 없으면 현재 값 유지
-    if (!data.fx && state.fx) data.fx = state.fx;
+    ['fx', 'people', 'expenses'].forEach(k => { if (!data[k] && state[k]) data[k] = state[k]; });
     state = data;
     delete state.sample;
     if (!state.days[currentDay]) currentDay = TRIP[0].date;
@@ -518,7 +529,8 @@
       btn2.textContent = tab === 'map' ? '⚙︎' : '⋯';
       btn2.setAttribute('aria-label', tab === 'map' ? '그랩 요금 설정' : '메뉴');
       $('#routeActions').style.visibility = tab === 'route' || tab === 'map' ? 'visible' : 'hidden';
-      $('#btnAdd').hidden = tab !== 'route';
+      $('#btnAdd').hidden = tab !== 'route' && tab !== 'settle';
+      $('#btnAdd').setAttribute('aria-label', tab === 'settle' ? '지출 추가' : '일정 추가');
       $('#screen').scrollTop = 0;
       document.dispatchEvent(new CustomEvent('pq:tab', { detail: tab }));
     });

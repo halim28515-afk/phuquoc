@@ -220,6 +220,8 @@
 
   // 다른 탭(지도 요금 등)에서 쓰기
   PQ.fx = {
+    parseAmount, bindAmount, fmt,
+    rate: () => currentRate(),
     toKrw: vnd => vnd / currentRate().rate,
     fmtKrw: vnd => fmt(vnd / currentRate().rate) + '원',
   };
