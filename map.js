@@ -1,14 +1,14 @@
-/* 푸꾸옥 여행 앱 – 동선 탭 지도, 거리/요금, 장소 검색 */
+/* 여행 플래너 – 동선 탭 지도, 거리/요금, 장소 검색 (현재 여행 기준) */
 (function () {
   'use strict';
   const PQ = window.PQ;
   const $ = sel => document.querySelector(sel);
   const esc = PQ.esc;
 
-  const PQ_CENTER = [10.22, 103.96]; // 푸꾸옥 섬 중앙
+  const TS = window.TripStore;
+  const WORLD = [[15, 105], 3]; // 목적지 좌표를 모를 때 기본 화면
   const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
   const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
-  const PQ_VIEWBOX = '103.82,10.48,104.11,9.98'; // 푸꾸옥 섬 범위 (좌,상,우,하)
   const ROUTE_CACHE_KEY = 'pq-route-cache-v1';
 
   const GRAB_PLAY = 'https://play.google.com/store/apps/details?id=com.grabtaxi.passenger';
@@ -21,18 +21,46 @@
     { key: 'car7', name: 'GrabCar 7인승' },
     { key: 'bike', name: 'GrabBike' },
   ];
-  const FARE_DEFAULT = {
+  // 베트남 동 기준 기본값. 다른 통화는 대략 환율로 바꿔서 시작값으로 씀
+  const FARE_VND = {
     car4: { base: 29000, baseKm: 2, perKm: 10500, perMin: 400 },
     car7: { base: 34000, baseKm: 2, perKm: 13000, perMin: 500 },
     bike: { base: 13000, baseKm: 2, perKm: 4300, perMin: 0 },
-    surge: 1,
   };
-  const FARE_FIELDS = [
-    ['base', '기본요금 (₫)', 1000],
-    ['baseKm', '기본거리 (km)', 0.5],
-    ['perKm', 'km당 (₫)', 100],
-    ['perMin', '분당 (₫)', 50],
-  ];
+  // 유효숫자 2자리로 깔끔하게
+  function nice(v) {
+    if (!v) return 0;
+    const p = Math.pow(10, Math.floor(Math.log10(Math.abs(v))) - 1);
+    return Math.round(v / p) * p;
+  }
+  const localCur = () => PQ.state.currency || 'VND';
+  function fareDefault() {
+    const k = TS.curOf(localCur()).fb / TS.curOf('VND').fb;
+    const out = { surge: 1 };
+    Object.keys(FARE_VND).forEach(t => {
+      const f = FARE_VND[t];
+      out[t] = { base: nice(f.base * k), baseKm: f.baseKm, perKm: nice(f.perKm * k), perMin: nice(f.perMin * k) };
+    });
+    return out;
+  }
+  function fareFields() {
+    const c = TS.curOf(localCur());
+    const unit = c.code === 'VND' ? '₫' : c.sym;
+    const step = nice(fareDefault().car4.perKm / 100) || (c.dec ? 0.01 : 1);
+    return [
+      ['base', `기본요금 (${unit})`, step],
+      ['baseKm', '기본거리 (km)', 0.5],
+      ['perKm', `km당 (${unit})`, step],
+      ['perMin', `분당 (${unit})`, step],
+    ];
+  }
+  // 그랩 서비스 국가(동남아)일 때만 그랩 버튼·요금 표시
+  const GRAB_COUNTRY = /베트남|태국|필리핀|인도네시아|말레이시아|싱가포르|캄보디아|미얀마|vietnam|thailand|philippines|indonesia|malaysia|singapore|cambodia|myanmar/i;
+  function isGrab(trip) {
+    trip = trip || PQ.state;
+    return TS.curOf(trip.currency).grab || GRAB_COUNTRY.test(trip.country || '');
+  }
+  PQ.isGrab = () => isGrab();
 
   function num(v, def, min, max) {
     const n = Number(v);
@@ -40,10 +68,11 @@
   }
   function getFare() {
     const raw = PQ.state.fare || {};
-    const out = { surge: num(raw.surge, FARE_DEFAULT.surge, 0.5, 3) };
+    const DEF = fareDefault();
+    const out = { surge: num(raw.surge, 1, 0.5, 3) };
     FARE_TYPES.forEach(({ key }) => {
       const r = raw[key] || {};
-      const d = FARE_DEFAULT[key];
+      const d = DEF[key];
       out[key] = {
         base: num(r.base, d.base, 0, 1e7),
         baseKm: num(r.baseKm, d.baseKm, 0, 100),
@@ -56,10 +85,9 @@
   function estimate(km, min, f, surge) {
     const raw = f.base + Math.max(0, km - f.baseKm) * f.perKm + min * f.perMin;
     const mid = Math.max(f.base, raw) * surge;
-    const r = v => Math.round(v / 1000) * 1000;
-    return { low: r(mid * 0.9), high: r(mid * 1.15) };
+    return { low: nice(mid * 0.9), high: nice(mid * 1.15) };
   }
-  const fmtVnd = n => n.toLocaleString('ko-KR') + '₫';
+  const fmtLocal = n => PQ.fx.fmtCur(n, localCur());
 
   // ---------- 거리/시간 ----------
   function haversineKm(a, b) {
@@ -122,7 +150,8 @@
       $('#mapNotice').hidden = false;
       return false;
     }
-    map = L.map('map', { zoomControl: true, attributionControl: true }).setView(PQ_CENTER, 10);
+    const c = PQ.state.center;
+    map = L.map('map', { zoomControl: true, attributionControl: true }).setView(c || WORLD[0], c ? 11 : WORLD[1]);
     const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
@@ -161,12 +190,13 @@
     }
     $('#mapEmpty').hidden = pts.length > 0 || !list.length; // 일정 자체가 없으면 아래 안내로 충분
     // 날짜나 좌표 구성이 바뀌었을 때만 화면 맞춤 (선택 시 지도가 튀지 않게)
-    const fitKey = PQ.currentDay + '|' + pts.map(p => p.join(',')).join(';');
+    const fitKey = PQ.state.id + '|' + PQ.currentDay + '|' + pts.map(p => p.join(',')).join(';') + '|' + (PQ.state.center || '');
     if (fitKey !== lastFitKey) {
       lastFitKey = fitKey;
       if (pts.length === 1) map.setView(pts[0], 14);
       else if (pts.length > 1) map.fitBounds(pts, { padding: [36, 36], maxZoom: 15 });
-      else map.setView(PQ_CENTER, 10);
+      else if (PQ.state.center) map.setView(PQ.state.center, 11);
+      else { map.setView(WORLD[0], WORLD[1]); geocodeDestination(); }
     }
     markSelectedCard();
   }
@@ -217,7 +247,9 @@
       fares.innerHTML = '';
       gmaps.hidden = true; grab.hidden = true;
     } else {
-      gmaps.hidden = false; grab.hidden = false;
+      const grabOn = isGrab();
+      gmaps.hidden = false; grab.hidden = !grabOn;
+      document.querySelector('.info-actions').classList.toggle('single', !grabOn);
       const q = new URLSearchParams({ api: '1', destination: `${it.lat},${it.lng}`, travelmode: 'driving' });
       if (prev) q.set('origin', `${prev.lat},${prev.lng}`);
       gmaps.href = 'https://www.google.com/maps/dir/?' + q.toString();
@@ -235,7 +267,7 @@
           leg.innerHTML = `<div class="route">${pi}. ${esc(prev.place)} → ${i + 1}. ${esc(it.place)}</div>
             <div class="big">${fmtKm(r.km)} · ${fmtMin(r.min)}</div>
             <div class="src">${r.src === 'osrm' ? '차량 도로 경로 기준 (OSRM)' : '경로 서버에 연결하지 못해 직선거리로 추정했어요'}</div>`;
-          renderFares(r);
+          if (isGrab()) renderFares(r);
         });
       }
     }
@@ -250,8 +282,8 @@
     const f = getFare();
     const rows = FARE_TYPES.map(({ key, name }) => {
       const e = estimate(r.km, r.min, f[key], f.surge);
-      const krw = PQ.fx ? `<span class="krw">약 ${PQ.fx.fmtKrw(e.low).replace('원', '')} ~ ${PQ.fx.fmtKrw(e.high)}</span>` : '';
-      return `<div class="fare-row"><span>${name}</span><b>${fmtVnd(e.low)} ~ ${fmtVnd(e.high)}${krw}</b></div>`;
+      const krw = localCur() !== 'KRW' ? `<span class="krw">약 ${PQ.fx.fmtKrw(e.low).replace('원', '')} ~ ${PQ.fx.fmtKrw(e.high)}</span>` : '';
+      return `<div class="fare-row"><span>${name}</span><b>${fmtLocal(e.low)} ~ ${fmtLocal(e.high)}${krw}</b></div>`;
     }).join('');
     $('#infoFares').innerHTML = `<h3>그랩 요금 <span class="badge">예상치</span></h3>${rows}
       <p class="hint">거리 기반 계산이라 실제 요금과 달라요. 기준값은 오른쪽 위 ⋯ 메뉴의 ‘그랩 요금 기준 설정’에서 바꿀 수 있어요.${f.surge !== 1 ? ` (할증 ×${f.surge} 적용)` : ''}</p>`;
@@ -297,13 +329,13 @@
   function fillFareForm(f) {
     $('#fareFields').innerHTML = FARE_TYPES.map(({ key, name }) => `
       <fieldset class="fare-group"><legend>${name}</legend>
-        <div class="row2">${FARE_FIELDS.map(([fk, label, step]) => `
+        <div class="row2">${fareFields().map(([fk, label, step]) => `
           <label>${label}<input type="number" id="fare-${key}-${fk}" data-k="${key}" data-f="${fk}" step="${step}" min="0" inputmode="decimal" value="${f[key][fk]}"></label>`).join('')}
         </div>
       </fieldset>`).join('');
     $('#fSurge').value = f.surge;
   }
-  $('#btnFareReset').addEventListener('click', () => fillFareForm(FARE_DEFAULT));
+  $('#btnFareReset').addEventListener('click', () => fillFareForm(fareDefault()));
   $('#fareForm').addEventListener('submit', e => {
     e.preventDefault();
     const out = { surge: num($('#fSurge').value, 1, 0.5, 3) };
@@ -323,11 +355,15 @@
 
   // ---------- 장소 검색 (Nominatim) ----------
   let searchBusy = false;
-  async function nominatim(q, bounded) {
-    const p = new URLSearchParams({
-      format: 'jsonv2', q, limit: '6', 'accept-language': 'ko,en', countrycodes: 'vn',
-    });
-    if (bounded) { p.set('viewbox', PQ_VIEWBOX); p.set('bounded', '1'); }
+  // opts: { cc: 국가코드, near: [lat,lng] (그 근처 우선) }
+  async function nominatim(q, opts) {
+    opts = opts || {};
+    const p = new URLSearchParams({ format: 'jsonv2', q, limit: '6', 'accept-language': 'ko,en' });
+    if (opts.cc) p.set('countrycodes', opts.cc);
+    if (opts.near) {
+      const [la, ln] = opts.near;
+      p.set('viewbox', [ln - 0.6, la + 0.6, ln + 0.6, la - 0.6].join(','));
+    }
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 10000);
     try {
@@ -335,6 +371,40 @@
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return await r.json();
     } finally { clearTimeout(t); }
+  }
+
+  const wait = ms => new Promise(r => setTimeout(r, ms)); // Nominatim 이용 정책: 초당 1회
+  // "장소명 + 여행 목적지"로 먼저 찾고, 없으면 장소명만(그 나라 안 → 전체)
+  async function searchPlace(place, trip) {
+    const cc = TS.curOf(trip.currency).cc;
+    const dest = [trip.city, trip.country].filter(Boolean).join(' ');
+    const tries = [];
+    if (dest) tries.push([`${place} ${dest}`, { cc, near: trip.center }]);
+    tries.push([place, { cc, near: trip.center }]);
+    if (cc) tries.push([place, {}]);
+    for (let i = 0; i < tries.length; i++) {
+      if (i) await wait(1100);
+      const res = await nominatim(tries[i][0], tries[i][1]);
+      if (res.length) return res;
+    }
+    return [];
+  }
+  PQ.searchPlace = searchPlace;
+
+  // 목적지 좌표(지도 기본 화면)를 모르면 한 번 찾아서 여행에 저장
+  const geoTried = new Set();
+  async function geocodeDestination() {
+    const trip = PQ.state;
+    if (trip.center || trip.id === '__blank__' || geoTried.has(trip.id) || !trip.city) return;
+    geoTried.add(trip.id);
+    try {
+      const res = await nominatim([trip.city, trip.country].filter(Boolean).join(' '), { cc: TS.curOf(trip.currency).cc });
+      if (res.length && TS.get(trip.id)) {
+        trip.center = [Number(res[0].lat), Number(res[0].lon)];
+        TS.save();
+        if (PQ.state.id === trip.id) renderMap();
+      }
+    } catch (e) { /* 오프라인이면 다음에 */ }
   }
 
   $('#btnSearch').addEventListener('click', async () => {
@@ -347,14 +417,9 @@
     ul.hidden = false;
     ul.innerHTML = '<li class="sr-msg">검색 중…</li>';
     try {
-      // 푸꾸옥 안에서 먼저 찾고, 없으면 베트남 전체에서
-      let res = await nominatim(q, true);
+      const res = await searchPlace(q, PQ.state);
       if (!res.length) {
-        await new Promise(r => setTimeout(r, 1100)); // Nominatim 이용 정책: 초당 1회
-        res = await nominatim(q, false);
-      }
-      if (!res.length) {
-        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 영어 이름(예: Night Market Duong Dong)으로 찾거나 좌표를 직접 넣어주세요.</li>';
+        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 영어 이름으로 찾거나 좌표를 직접 넣어주세요.</li>';
         return;
       }
       ul.innerHTML = res.map((r, i) => {
@@ -383,6 +448,8 @@
     renderMap();
     if (!$('#infoSheet').hidden && !PQ.findItem(selectedId)) PQ.closeSheet('#infoSheet');
   });
+  // 여행을 바꾸면 선택·화면 맞춤 초기화
+  document.addEventListener('pq:trip', () => { selectedId = null; lastFitKey = ''; });
   document.addEventListener('pq:tab', e => {
     if (e.detail === 'route') {
       PQ.render(); // 탭이 다시 보일 때 지도 크기 재계산

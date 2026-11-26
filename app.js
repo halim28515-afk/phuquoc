@@ -1,114 +1,34 @@
-/* 푸꾸옥 여행 앱 – 동선 탭 */
+/* 여행 플래너 – 동선 탭 (현재 선택된 여행) */
 (function () {
   'use strict';
-
-  const STORAGE_KEY = 'pq-trip-v1';
-  const UI_KEY = 'pq-ui-v1';
-
-  // 여행 정보: 2026-12-10 ~ 12-14, 1~3박 인터컨티넨탈 푸꾸옥, 4박 그린베이
-  const TRIP = [
-    { date: '2026-12-10', stay: '인터컨티넨탈 푸꾸옥', note: '도착' },
-    { date: '2026-12-11', stay: '인터컨티넨탈 푸꾸옥', note: '' },
-    { date: '2026-12-12', stay: '인터컨티넨탈 푸꾸옥', note: '' },
-    { date: '2026-12-13', stay: '그린베이', note: '숙소 이동' },
-    { date: '2026-12-14', stay: null, note: '귀국' },
-  ];
+  const TS = window.TripStore;
   const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 
-  // 처음 열었을 때 보여줄 예시 일정 (좌표는 대략값)
-  const SAMPLE = {
-    '2026-12-10': [
-      ['14:00', '푸꾸옥 국제공항 도착', '그랩으로 숙소 이동', 10.1698, 103.9931],
-      ['15:30', '인터컨티넨탈 푸꾸옥 체크인', '', null, null],
-      ['18:00', '선셋타운 키스브릿지', '일몰 + 불꽃쇼', 10.0255, 104.0137],
-    ],
-    '2026-12-11': [
-      ['09:30', '혼텀 케이블카', '선월드 티켓 예약', 10.0295, 104.0090],
-      ['15:00', '사오비치', '', 10.0546, 104.0362],
-    ],
-    '2026-12-12': [
-      ['08:30', '남부 호핑투어 픽업', '수영복, 선크림', null, null],
-    ],
-    '2026-12-13': [
-      ['11:00', '인터컨티넨탈 푸꾸옥 체크아웃', '', null, null],
-      ['14:00', '그린베이 체크인', '', null, null],
-      ['19:00', '즈엉동 야시장', '해산물 저녁', 10.2170, 103.9600],
-    ],
-    '2026-12-14': [
-      ['10:00', '그린베이 체크아웃', '', null, null],
-      ['12:00', '푸꾸옥 국제공항', '출국 2시간 전 도착', 10.1698, 103.9931],
-    ],
-  };
+  // ---------- 현재 여행 ----------
+  // state = 현재 여행 객체 (TripStore 안의 객체를 직접 수정하고 save()로 저장)
+  let state = TS.get(TS.lastTripId) || TS.blank();
+  let currentDay = pickDay();
 
-  // ---------- 저장소 ----------
-  function emptyData() {
-    const days = {};
-    TRIP.forEach(d => { days[d.date] = []; });
-    return { version: 1, days };
+  function pickDay() {
+    const dates = TS.tripDates(state);
+    const today = TS.todayISO();
+    if (dates.includes(today)) return today;
+    const ui = TS.uiFor(state.id);
+    return ui.day && state.days[ui.day] ? ui.day : (dates[0] || today);
   }
-
-  function sampleData() {
-    const data = emptyData();
-    data.sample = true;
-    Object.keys(SAMPLE).forEach(date => {
-      data.days[date] = SAMPLE[date].map(([time, place, memo, lat, lng]) => ({ id: uid(), time, place, memo, lat, lng }));
-    });
-    return data;
-  }
-
-  function normalize(raw) {
-    const data = emptyData();
-    if (!raw || typeof raw !== 'object' || !raw.days || typeof raw.days !== 'object') {
-      throw new Error('형식이 올바르지 않아요');
-    }
-    Object.keys(raw.days).forEach(date => {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Array.isArray(raw.days[date])) return;
-      data.days[date] = raw.days[date]
-        .filter(it => it && typeof it === 'object' && String(it.place || '').trim())
-        .map(it => ({
-          id: typeof it.id === 'string' && it.id ? it.id : uid(),
-          time: /^\d{2}:\d{2}$/.test(it.time) ? it.time : '',
-          place: String(it.place).trim().slice(0, 80),
-          memo: String(it.memo || '').slice(0, 500),
-          lat: toNum(it.lat),
-          lng: toNum(it.lng),
-        }));
-    });
-    if (raw.sample === true) data.sample = true;
-    if (raw.fare && typeof raw.fare === 'object') data.fare = raw.fare; // 그랩 요금 설정 (map.js에서 검증)
-    if (raw.fx && typeof raw.fx === 'object') data.fx = raw.fx;         // 환율 설정 (fx.js에서 검증)
-    if (Array.isArray(raw.people)) data.people = raw.people;            // 정산 참여자 (settle.js에서 검증)
-    if (Array.isArray(raw.expenses)) data.expenses = raw.expenses;      // 지출 내역 (settle.js에서 검증)
-    return data;
-  }
-
-  function load() {
-    try {
-      const s = localStorage.getItem(STORAGE_KEY);
-      return s ? normalize(JSON.parse(s)) : sampleData();
-    } catch (e) {
-      console.warn('저장 데이터 읽기 실패', e);
-      return sampleData();
-    }
-  }
-
   function save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      toast('저장 실패: 브라우저 저장소를 쓸 수 없어요');
-    }
-  }
-
-  function loadUI() {
-    try { return JSON.parse(localStorage.getItem(UI_KEY)) || {}; } catch (e) { return {}; }
+    if (state.id === '__blank__') return;
+    state.updatedAt = Date.now();
+    if (!TS.save()) toast('저장 실패: 브라우저 저장소를 쓸 수 없어요');
   }
   function saveUI() {
-    try { localStorage.setItem(UI_KEY, JSON.stringify({ day: currentDay })); } catch (e) { /* noop */ }
+    if (state.id === '__blank__') return;
+    TS.uiFor(state.id).day = currentDay;
+    TS.save();
   }
 
   // ---------- 유틸 ----------
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  const uid = TS.uid;
   function toNum(v) {
     if (v === null || v === undefined || v === '') return null;
     const n = Number(v);
@@ -117,18 +37,17 @@
   function esc(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
+  const tripDates = () => TS.tripDates(state);
   function dayInfo(date) {
     const [y, m, d] = date.split('-').map(Number);
     const wd = WEEK[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-    const idx = TRIP.findIndex(t => t.date === date);
-    return { m, d, wd, idx, trip: TRIP[idx] };
+    const idx = tripDates().indexOf(date);
+    return { m, d, wd, idx, stay: (state.stays || {})[date] || null };
   }
   function allDates() {
-    const extra = Object.keys(state.days).filter(d => !TRIP.some(t => t.date === d)).sort();
-    return TRIP.map(t => t.date).concat(extra);
-  }
-  function countAll(data) {
-    return Object.values(data.days).reduce((s, l) => s + l.length, 0);
+    const dates = tripDates();
+    const extra = Object.keys(state.days).filter(d => !dates.includes(d) && state.days[d].length).sort();
+    return dates.concat(extra);
   }
   const $ = sel => document.querySelector(sel);
 
@@ -162,18 +81,18 @@
     });
   }
 
-  // ---------- 상태 ----------
-  let state = load();
-  let currentDay = (function () {
-    const today = new Date();
-    const iso = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-    if (state.days[iso]) return iso;
-    const ui = loadUI();
-    return ui.day && state.days[ui.day] ? ui.day : TRIP[0].date;
-  })();
   let editingId = null;
 
   // ---------- 렌더 ----------
+  function renderAppbar() {
+    $('#tripTitle').textContent = state.name || '여행';
+    const dates = tripDates();
+    const fmtD = s => s.slice(5).replace('-', '.');
+    const place = [state.city, state.country].filter(Boolean).join(' · ');
+    $('#tripSub').textContent = [place, dates.length ? `${fmtD(state.start)} – ${fmtD(state.end)} · ${dates.length - 1}박 ${dates.length}일` : ''].filter(Boolean).join(' · ');
+    document.title = state.name ? `${state.name} · 여행 플래너` : '여행 플래너';
+  }
+
   function renderChips() {
     const html = allDates().map(date => {
       const { m, d, wd, idx } = dayInfo(date);
@@ -184,7 +103,6 @@
         <span class="d2">${m}/${d} (${wd})</span>
       </button>`;
     }).join('');
-    // 동선 탭과 지도 탭이 같은 날짜 칩을 씀
     document.querySelectorAll('.day-chips').forEach(wrap => {
       wrap.innerHTML = html;
       const active = wrap.querySelector('.chip.active');
@@ -195,18 +113,22 @@
   }
 
   function renderHead() {
-    const { trip } = dayInfo(currentDay);
+    const { idx, stay } = dayInfo(currentDay);
     const el = $('#dayHead');
-    if (!trip) { el.innerHTML = '<span>여행 기간 외 날짜</span>'; return; }
-    el.innerHTML = (trip.note ? `<span>${esc(trip.note)}</span>` : '') +
-      (trip.stay ? `<span>🏨 숙박 <b>${esc(trip.stay)}</b></span>` : '<span>✈️ 체크아웃 · 공항</span>');
+    let html = '';
+    if (idx < 0) html = '<span>여행 기간 밖 날짜</span>';
+    else if (stay) {
+      html = (stay.note ? `<span>${esc(stay.note)}</span>` : '') +
+        (stay.stay ? `<span>🏨 숙박 <b>${esc(stay.stay)}</b></span>` : '<span>✈️ 체크아웃 · 공항</span>');
+    }
+    el.innerHTML = html;
+    el.hidden = !html;
   }
 
   function renderCards() {
     const list = state.days[currentDay] || [];
     const ul = $('#cardList');
-    ul.innerHTML = list.map((it, i) => {
-      return `<li class="card" data-id="${esc(it.id)}">
+    ul.innerHTML = list.map(it => `<li class="card" data-id="${esc(it.id)}">
         <div class="time${it.time ? '' : ' none'}">${it.time || '--:--'}</div>
         <div class="body">
           <div class="place">${esc(it.place)}</div>
@@ -217,18 +139,37 @@
           <button type="button" class="card-exp" data-exp="${esc(it.id)}" aria-label="이 일정에 지출 추가">💸</button>
           <div class="handle" aria-label="순서 변경">≡</div>
         </div>
-      </li>`;
-    }).join('');
+      </li>`).join('');
     $('#emptyState').hidden = list.length > 0;
     $('#sampleBanner').hidden = !state.sample;
   }
 
   const renderHooks = [];
   function render() {
+    renderAppbar();
     renderChips();
     renderHead();
     renderCards();
     renderHooks.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
+  }
+
+  // 다른 여행으로 전환
+  function switchTrip(id) {
+    const t = TS.get(id);
+    if (!t) return false;
+    state = t;
+    TS.lastTripId = id;
+    currentDay = pickDay();
+    document.querySelectorAll('.sheet-backdrop').forEach(s => { s.hidden = true; });
+    document.dispatchEvent(new CustomEvent('pq:trip', { detail: id }));
+    selectTab('route');
+    render();
+    return true;
+  }
+  function clearTrip() {
+    state = TS.blank();
+    currentDay = pickDay();
+    document.dispatchEvent(new CustomEvent('pq:trip', { detail: null }));
   }
 
   // ---------- 드래그 정렬 ----------
@@ -264,16 +205,21 @@
   });
 
   // ---------- 편집 ----------
+  function dateOptions(selected) {
+    const dates = allDates();
+    if (selected && !dates.includes(selected)) dates.push(selected);
+    return dates.map(date => {
+      const { m, d, wd, idx } = dayInfo(date);
+      return `<option value="${date}"${date === selected ? ' selected' : ''}>${idx >= 0 ? 'Day ' + (idx + 1) + ' · ' : ''}${m}/${d} (${wd})</option>`;
+    }).join('');
+  }
+
   function openEditor(item) {
     editingId = item ? item.id : null;
     $('#editTitle').textContent = item ? '일정 수정' : '일정 추가';
     $('#btnDelete').hidden = !item;
-    const sel = $('#fDate');
-    sel.innerHTML = allDates().map(date => {
-      const { m, d, wd, idx } = dayInfo(date);
-      return `<option value="${date}">${idx >= 0 ? 'Day ' + (idx + 1) + ' · ' : ''}${m}/${d} (${wd})</option>`;
-    }).join('');
-    sel.value = currentDay;
+    const found = item ? findItem(item.id) : null;
+    $('#fDate').innerHTML = dateOptions(found ? found.date : currentDay);
     $('#fTime').value = item ? item.time : '';
     $('#fPlace').value = item ? item.place : '';
     $('#fMemo').value = item ? item.memo : '';
@@ -389,23 +335,27 @@
     else openEditor(found.item);
   });
 
+  let currentTab = 'route';
   $('#btnAdd').addEventListener('click', () => {
     if (currentTab === 'settle' && PQ.openExpense) PQ.openExpense(null, { date: currentDay });
     else openEditor(null);
   });
-  let currentTab = 'route';
-  $('#btnMenu').addEventListener('click', () => openSheet('#menuSheet'));
+  $('#btnMenu').addEventListener('click', () => {
+    $('#btnFare').hidden = !(PQ.isGrab && PQ.isGrab());
+    openSheet('#menuSheet');
+  });
   $('#btnFare').addEventListener('click', () => {
     closeSheet('#menuSheet');
     if (window.PQ.openFareSettings) window.PQ.openFareSettings();
   });
+  $('#btnTripHome').addEventListener('click', () => { if (PQ.showTrips) PQ.showTrips(); });
 
   $('#btnSampleClear').addEventListener('click', async () => {
     if (!await ask('예시 일정을 모두 지우고 빈 일정으로 시작할까요?', '지우기', true)) return;
     // 일정만 지우고 요금·환율 설정, 정산 데이터는 유지
-    const keep = {};
-    ['fare', 'fx', 'people', 'expenses'].forEach(k => { if (state[k]) keep[k] = state[k]; });
-    state = Object.assign(emptyData(), keep);
+    Object.keys(state.days).forEach(d => { state.days[d] = []; });
+    tripDates().forEach(d => { state.days[d] = []; });
+    delete state.sample;
     save();
     render();
     toast('예시 일정을 지웠어요');
@@ -417,7 +367,7 @@
   });
 
   $('#btnSortTime').addEventListener('click', () => {
-    const list = state.days[currentDay];
+    const list = state.days[currentDay] || [];
     // 시간 없는 일정은 맨 뒤로, 같은 시간은 기존 순서 유지
     state.days[currentDay] = list.map((it, i) => ({ it, i })).sort((a, b) => {
       if (!a.it.time && !b.it.time) return a.i - b.i;
@@ -433,7 +383,7 @@
 
   $('#btnClearDay').addEventListener('click', async () => {
     const { m, d } = dayInfo(currentDay);
-    if (!state.days[currentDay].length) { toast('삭제할 일정이 없어요'); return; }
+    if (!(state.days[currentDay] || []).length) { toast('삭제할 일정이 없어요'); return; }
     if (!await ask(`${m}/${d} 일정을 모두 삭제할까요?`, '모두 삭제', true)) return;
     state.days[currentDay] = [];
     save();
@@ -442,23 +392,25 @@
     toast('삭제했어요');
   });
 
-  // 내보내기: 파일 저장 + 복사 (파일 저장이 막힌 환경에서도 복사로 보관 가능)
-  function exportJSON() {
-    const payload = Object.assign({ app: 'phuquoc-trip', exportedAt: new Date().toISOString() }, state);
-    return JSON.stringify(payload, null, 2);
+  // ---------- 내보내기 시트 (여행 하나 / 전체 백업 공용) ----------
+  let exportName = 'trip';
+  function showExport(title, text, filename) {
+    $('#exportTitle').textContent = title;
+    $('#exportText').value = text;
+    exportName = filename;
+    openSheet('#exportSheet');
   }
   $('#btnExport').addEventListener('click', () => {
     closeSheet('#menuSheet');
-    $('#exportText').value = exportJSON();
-    openSheet('#exportSheet');
+    showExport('이 여행 내보내기', TS.exportTrip(state.id), 'trip-' + (state.city || state.name || 'export'));
   });
   $('#btnDownload').addEventListener('click', () => {
     const blob = new Blob([$('#exportText').value], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     a.href = url;
-    a.download = `phuquoc-trip-${stamp}.json`;
+    a.download = `${exportName.replace(/[\\/:*?"<>|\s]+/g, '-')}-${stamp}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -475,36 +427,19 @@
     }
   });
 
-  // 가져오기: 파일 선택 또는 붙여넣기
-  async function importRaw(text) {
-    let data;
-    try {
-      data = normalize(JSON.parse(text));
-    } catch (err) {
-      toast('가져오기 실패: ' + (err instanceof SyntaxError ? 'JSON 형식 오류' : err.message));
-      return;
-    }
-    const count = countAll(data);
-    if (!await ask(`일정 ${count}개를 가져와요. 현재 일정은 모두 바뀌어요. 계속할까요?`, '가져오기')) return;
-    if (!data.fare && state.fare) data.fare = state.fare; // 파일에 설정이 없으면 현재 값 유지
-    ['fx', 'people', 'expenses'].forEach(k => { if (!data[k] && state[k]) data[k] = state[k]; });
-    state = data;
-    delete state.sample;
-    if (!state.days[currentDay]) currentDay = TRIP[0].date;
-    save();
-    closeSheet('#importSheet');
-    render();
-    toast(`일정 ${count}개를 가져왔어요`);
-  }
-  $('#btnImport').addEventListener('click', () => {
-    closeSheet('#menuSheet');
+  // ---------- 가져오기 시트 (JSON 붙여넣기/파일) – 처리 함수는 여는 쪽에서 지정 ----------
+  let importHandler = null;
+  function showImport(title, hint, handler) {
+    $('#importTitle').textContent = title;
+    $('#importHint').textContent = hint;
     $('#importText').value = '';
+    importHandler = handler;
     openSheet('#importSheet');
-  });
+  }
   $('#btnImportText').addEventListener('click', () => {
     const text = $('#importText').value.trim();
     if (!text) { toast('붙여넣은 내용이 없어요'); return; }
-    importRaw(text);
+    if (importHandler) importHandler(text);
   });
   $('#btnPickFile').addEventListener('click', () => $('#importFile').click());
   $('#importFile').addEventListener('change', e => {
@@ -512,30 +447,30 @@
     e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => importRaw(reader.result);
+    reader.onload = () => { if (importHandler) importHandler(reader.result); };
     reader.readAsText(file);
   });
 
-  // 하단 탭
-  document.querySelectorAll('.tabbar .tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      document.querySelectorAll('.tabbar .tab').forEach(b => b.classList.toggle('active', b === btn));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
-      currentTab = tab;
-      $('#routeActions').style.visibility = tab === 'route' ? 'visible' : 'hidden';
-      $('#btnAdd').hidden = tab !== 'route' && tab !== 'settle';
-      $('#btnAdd').setAttribute('aria-label', tab === 'settle' ? '지출 추가' : '일정 추가');
-      $('#screen').scrollTop = 0;
-      document.dispatchEvent(new CustomEvent('pq:tab', { detail: tab }));
-    });
-  });
+  // ---------- 하단 탭 ----------
+  function selectTab(tab) {
+    document.querySelectorAll('.tabbar .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+    currentTab = tab;
+    $('#routeActions').style.visibility = tab === 'route' ? 'visible' : 'hidden';
+    $('#btnAdd').hidden = tab !== 'route' && tab !== 'settle';
+    $('#btnAdd').setAttribute('aria-label', tab === 'settle' ? '지출 추가' : '일정 추가');
+    $('#screen').scrollTop = 0;
+    document.dispatchEvent(new CustomEvent('pq:tab', { detail: tab }));
+  }
+  document.querySelectorAll('.tabbar .tab').forEach(btn => btn.addEventListener('click', () => selectTab(btn.dataset.tab)));
 
-  // 다른 탭(map.js 등)에서 쓰는 API
+  // 다른 모듈(map/fx/settle/trips-ui)에서 쓰는 API
   window.PQ = {
     get state() { return state; },
     get currentDay() { return currentDay; },
-    TRIP, esc, dayInfo, toast, ask, save, render, findItem,
+    get currentTab() { return currentTab; },
+    tripDates, allDates, dateOptions, esc, dayInfo, toast, ask, save, render, findItem,
+    switchTrip, clearTrip, selectTab, showExport, showImport,
     openEditor: item => openEditor(item),
     openSheet, closeSheet,
     onRender: fn => renderHooks.push(fn),

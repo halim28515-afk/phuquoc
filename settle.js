@@ -1,4 +1,4 @@
-/* 푸꾸옥 여행 앱 – 정산 탭 */
+/* 여행 플래너 – 정산 탭 (현재 여행) */
 (function () {
   'use strict';
   const PQ = window.PQ;
@@ -18,7 +18,11 @@
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   const fmt = fx.fmt;
   const won = n => fmt(n) + '원';
-  const fmtCur = (amt, cur) => cur === 'VND' ? fmt(amt) + '₫' : fmt(amt) + '원';
+  const fmtCur = (amt, cur) => fx.fmtCur(amt, cur);
+  const TS = window.TripStore;
+  const validCur = c => TS.CURRENCIES.some(x => x.code === c);
+  // 지출에 고를 수 있는 통화: 현지 통화, 원, 달러
+  const curChoices = () => [...new Set([PQ.state.currency || 'VND', 'KRW', 'USD'])];
 
   // ---------- 데이터 ----------
   // 가져온 JSON 등에서 들어온 값을 정리
@@ -34,18 +38,18 @@
         id: e.id,
         title: String(e.title || '지출').slice(0, 60),
         amount: Number(e.amount),
-        currency: e.currency === 'KRW' ? 'KRW' : 'VND',
+        currency: validCur(e.currency) ? e.currency : (st.currency || 'VND'),
         payer: ids.has(e.payer) ? e.payer : null,
         split: (Array.isArray(e.split) ? e.split : []).filter(id => ids.has(id)),
         cat: catOf(e.cat).key,
-        date: /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : PQ.TRIP[0].date,
+        date: /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : st.start,
         itemId: typeof e.itemId === 'string' ? e.itemId : null,
       }));
   }
   const people = () => PQ.state.people || [];
   const expenses = () => PQ.state.expenses || [];
   const nameOf = id => (people().find(p => p.id === id) || {}).name || '(삭제됨)';
-  const toKrw = e => e.currency === 'VND' ? fx.toKrw(e.amount) : e.amount;
+  const toKrw = e => fx.convert(e.amount, e.currency, 'KRW');
 
   // ---------- 계산 ----------
   function compute() {
@@ -207,7 +211,7 @@
         return `<li class="exp" data-id="${esc(e.id)}">
           <span class="ico">${c.ico}</span>
           <span class="mid"><div class="t">${esc(e.title)}</div><div class="m">${esc(meta)}</div></span>
-          <span class="r"><b>${fmtCur(e.amount, e.currency)}</b>${e.currency === 'VND' ? `<small>≈ ${won(toKrw(e))}</small>` : ''}</span>
+          <span class="r"><b>${fmtCur(e.amount, e.currency)}</b>${e.currency !== 'KRW' ? `<small>≈ ${won(toKrw(e))}</small>` : ''}</span>
         </li>`;
       }).join('');
       return `<li class="date-head">${m}/${dd} (${wd})</li>${items}`;
@@ -300,7 +304,10 @@
     pickButtons($('#ePayer'), ps.map(p => ({ v: p.id, label: p.name })), v => v === form.payer);
     pickButtons($('#eSplit'), ps.map(p => ({ v: p.id, label: p.name })), v => form.split.has(v));
     pickButtons($('#eCat'), CATS.map(c => ({ v: c.key, label: `${c.ico} ${c.name}` })), v => v === form.cat);
-    document.querySelectorAll('#eCurSeg button').forEach(b => b.classList.toggle('on', b.dataset.cur === form.cur));
+    const curs = curChoices();
+    if (!curs.includes(form.cur)) curs.push(form.cur); // 통화를 바꾼 여행의 예전 지출
+    $('#eCurSeg').innerHTML = curs.map(c => `<button type="button" data-cur="${c}" class="${c === form.cur ? 'on' : ''}">${c}</button>`).join('');
+    $('#eCurSeg').style.gridTemplateColumns = `repeat(${curs.length}, 1fr)`;
     $('#eSplitAll').textContent = form.split.size === ps.length ? '전체 해제' : '전체 선택';
     updateHint();
   }
@@ -308,8 +315,9 @@
     const v = fx.parseAmount($('#eAmount').value);
     const n = form.split.size;
     if (!(v > 0)) { $('#eKrwHint').textContent = ''; return; }
-    const krw = form.cur === 'VND' ? fx.toKrw(v) : v;
-    const other = form.cur === 'VND' ? `≈ ${won(krw)}` : `≈ ${fmt(v * fx.rate().rate)}₫`;
+    const krw = fx.convert(v, form.cur, 'KRW');
+    const loc = PQ.state.currency || 'VND';
+    const other = form.cur !== 'KRW' ? `≈ ${won(krw)}` : `≈ ${fx.fmtCur(fx.convert(v, 'KRW', loc), loc)}`;
     $('#eKrwHint').textContent = other + (n ? ` · 1인당 ${won(krw / n)}` : '');
   }
   function fillItems(selected) {
@@ -332,7 +340,7 @@
     editId = exp ? exp.id : null;
     const linked = !exp && opts.itemId ? PQ.findItem(opts.itemId) : null;
     form = {
-      cur: exp ? exp.currency : 'VND',
+      cur: exp ? exp.currency : (PQ.state.currency || 'VND'),
       payer: exp ? exp.payer : (ps.some(p => p.id === lastPayer) ? lastPayer : ps[0].id),
       split: new Set(exp ? exp.split : ps.map(p => p.id)),
       cat: exp ? exp.cat : 'food',
@@ -340,14 +348,9 @@
     $('#expTitle').textContent = exp ? '지출 수정' : '지출 추가';
     $('#btnExpDelete').hidden = !exp;
     $('#eTitle').value = exp ? exp.title : (linked ? linked.item.place : '');
-    $('#eAmount').value = exp ? fmt(exp.amount) : '';
+    $('#eAmount').value = exp ? fx.fmtNum(exp.currency, exp.amount) : '';
     const date = exp ? exp.date : (linked ? linked.date : (opts.date || PQ.currentDay));
-    const dates = PQ.TRIP.map(t => t.date);
-    if (!dates.includes(date)) dates.push(date);
-    $('#eDate').innerHTML = dates.map(d => {
-      const { m, d: dd, wd, idx } = PQ.dayInfo(d);
-      return `<option value="${d}">${idx >= 0 ? 'Day ' + (idx + 1) + ' · ' : ''}${m}/${dd} (${wd})</option>`;
-    }).join('');
+    $('#eDate').innerHTML = PQ.dateOptions(date);
     $('#eDate').value = date;
     fillItems(exp ? exp.itemId : (linked ? opts.itemId : ''));
     renderForm();
@@ -391,7 +394,7 @@
     if (!form.split.size) { PQ.toast('나눌 사람을 한 명 이상 고르세요'); return; }
     const data = {
       title,
-      amount: form.cur === 'KRW' ? Math.round(amount) : Math.round(amount),
+      amount: TS.curOf(form.cur).dec ? Math.round(amount * 100) / 100 : Math.round(amount),
       currency: form.cur,
       payer: form.payer,
       split: [...form.split],
@@ -427,6 +430,13 @@
   PQ.onRender(() => { if ($('#tab-settle').classList.contains('active')) render(); });
   document.addEventListener('pq:tab', e => { if (e.detail === 'settle') render(); });
   PQ._settle = { minTransfers, compute }; // 테스트용
+  // 여행 목록 카드용: 그 여행의 총 지출(원) – 여행별 환율 설정으로 환산
+  PQ.tripTotalKrw = trip => (trip.expenses || []).reduce((sum, e) => {
+    const amt = Number(e.amount);
+    if (!(amt > 0)) return sum;
+    const cur = validCur(e.currency) ? e.currency : trip.currency;
+    return sum + fx.convertFor(trip, amt, cur, 'KRW');
+  }, 0);
 
   clean();
   PQ.render(); // 동선 카드에 지출 배지 표시

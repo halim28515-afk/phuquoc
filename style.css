@@ -530,3 +530,105 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .fx-table td { text-align: right; }
 .fx-table td:last-child { color: var(--muted); font-weight: 500; }
 .fx-table td:nth-child(2) { font-weight: 600; }
+
+/* ---------- 여러 여행: 상단 바 여행 이름 ---------- */
+.trip-home {
+  display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;
+  border: 0; background: none; color: inherit; text-align: left; padding: 0; margin-right: 8px;
+}
+.trip-home .back { font-size: 26px; line-height: 1; opacity: .85; margin-top: -2px; }
+.trip-home .tt { min-width: 0; display: block; }
+.trip-home h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trip-home .sub { display: block; margin-top: 2px; font-size: 12px; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#askMsg { white-space: pre-line; }
+.info-actions.single { grid-template-columns: 1fr; }
+
+/* ---------- 전체 화면 페이지 (시작 / 목록 / 새 여행) ---------- */
+.page {
+  position: absolute; inset: 0; z-index: 40; background: var(--bg);
+  overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column;
+}
+.page[hidden] { display: none; }
+.statusbar { z-index: 45; }
+.island { z-index: 46; }
+.page-bar {
+  position: sticky; top: 0; z-index: 2; flex: 0 0 auto;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+  padding: calc(12px + var(--safe-t)) 16px 12px; background: var(--primary); color: var(--on-primary);
+}
+.page-bar h1 { margin: 0; font-size: 18px; text-align: center; grid-column: 2; }
+.page-bar > :first-child:not(h1) { justify-self: start; }
+.page-bar > :last-child { justify-self: end; }
+#pageTrips .page-bar { grid-template-columns: 1fr auto; }
+#pageTrips .page-bar h1 { grid-column: 1; text-align: left; font-size: 22px; }
+.page-bar .step { font-size: 12px; opacity: .85; }
+.link-back { border: 0; background: none; color: inherit; font-size: 15px; padding: 4px 0; }
+.icon-btn.dark { background: rgba(255,255,255,.18); }
+.page-body { padding: 16px; flex: 1; }
+.btn.big { width: 100%; padding: 15px; font-size: 16px; border-radius: 14px; }
+
+/* 시작 화면 */
+.start-page {
+  justify-content: space-between; padding: calc(40px + var(--safe-t)) 24px calc(28px + var(--safe-b));
+  background: linear-gradient(170deg, var(--primary) 0%, var(--primary) 55%, var(--bg) 55.2%);
+}
+.start-hero { color: var(--on-primary); padding-top: 40px; }
+.start-mark {
+  width: 64px; height: 64px; border-radius: 20px; background: rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 20px;
+}
+.start-hero h1 { margin: 0 0 10px; font-size: 32px; letter-spacing: -.5px; text-wrap: balance; }
+.start-hero p { margin: 0; font-size: 17px; line-height: 1.5; opacity: .9; }
+
+/* 여행 목록 */
+.trip-list { padding: 4px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.trip-group { margin: 14px 2px 0; font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: .3px; }
+.trip-card {
+  background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 12px 14px 12px;
+  cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  border-left: 4px solid var(--accent);
+}
+.trip-card.ongoing { border-left-color: var(--primary); }
+.trip-card.past { border-left-color: var(--line); }
+.trip-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tc-top { display: flex; justify-content: space-between; align-items: center; }
+.tc-status { font-size: 12px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.trip-card.ongoing .tc-status { color: var(--primary); }
+.trip-card.past .tc-status { color: var(--muted); }
+.tc-more { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 2px 6px; margin: -4px -6px 0 0; }
+.trip-card h3 { margin: 4px 0 2px; font-size: 18px; }
+.tc-place, .tc-period { margin: 0; font-size: 13px; color: var(--muted); }
+.tc-period { font-variant-numeric: tabular-nums; }
+.tc-stats { display: flex; gap: 12px; margin-top: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.trip-empty { text-align: center; color: var(--muted); padding: 60px 16px; line-height: 1.7; }
+.page-foot {
+  position: sticky; bottom: 0; padding: 12px 16px calc(12px + var(--safe-b));
+  background: linear-gradient(transparent, var(--bg) 30%);
+}
+
+/* 새 여행 폼 */
+.new-form label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.new-form input, .new-form select {
+  display: block; width: 100%; margin-top: 4px; padding: 11px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 16px;
+}
+.new-form .row2 label { margin-bottom: 12px; }
+.new-form .hint { margin: -6px 0 12px; }
+.people-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.pchip { display: inline-flex; align-items: center; gap: 2px; padding: 4px 4px 4px 11px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 14px; font-weight: 600; }
+.pchip button { border: 0; background: none; color: inherit; font-size: 16px; line-height: 1; padding: 2px 6px; }
+.new-form .people-add input { margin-top: 0; }
+.new-form .btn.big { margin-top: 12px; }
+
+/* 일정 추가 방법 */
+.method { display: flex; flex-direction: column; gap: 12px; }
+.method-btn {
+  display: flex; align-items: center; gap: 14px; text-align: left; padding: 18px 16px;
+  border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow);
+}
+.method-btn .mi { font-size: 28px; }
+.method-btn b { display: block; font-size: 16px; }
+.method-btn small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.method-btn:active { border-color: var(--primary); }
+[hidden] { display: none !important; }
+.new-form .people-add { margin-bottom: 14px; }
