@@ -166,6 +166,7 @@
     $('#newStep').hidden = !!trip;
     $('#btnNewNext').textContent = trip ? '저장' : '다음';
     $('#nPeopleBox').hidden = !!trip;
+    $('#nUploadBox').hidden = !!trip;
     $('#nName').value = trip ? trip.name : '';
     $('#nCity').value = trip ? trip.city : '';
     $('#nCountry').value = trip ? trip.country : '';
@@ -248,56 +249,114 @@
   $('#btnStart').addEventListener('click', showTrips);
   $('#btnNewTrip').addEventListener('click', () => openForm(null));
 
-  // ---------- 가져오기 · 백업 ----------
-  $('#btnTripsMenu').addEventListener('click', () => PQ.openSheet('#tripsMenuSheet'));
+  // ---------- 여행 파일 업로드 (새로 시작하기 화면) ----------
+  const importErr = err => PQ.toast('불러오기 실패: ' + (err instanceof SyntaxError ? 'JSON 형식 오류' : err.message));
 
-  $('#btnImportTrip').addEventListener('click', () => {
-    PQ.closeSheet('#tripsMenuSheet');
-    PQ.showImport('여행 JSON 가져오기', '다른 폰에서 내보낸 여행 JSON 파일을 고르거나 내용을 붙여넣으세요. 새 여행으로 목록에 추가돼요.', async text => {
+  $('#btnUploadTrip').addEventListener('click', () => {
+    PQ.showImport('여행 파일 업로드', '공유받은 여행 파일이나 백업 파일(JSON)을 고르거나 내용을 붙여넣으세요.', async text => {
       let res;
-      try { res = TS.parseImport(text); } catch (err) { PQ.toast('가져오기 실패: ' + (err instanceof SyntaxError ? 'JSON 형식 오류' : err.message)); return; }
-      if (res.kind === 'backup') {
-        PQ.closeSheet('#importSheet');
-        return restore(res.trips);
-      }
-      const t = res.trip;
+      try { res = TS.parseImport(text); } catch (err) { importErr(err); return; }
+      PQ.closeSheet('#importSheet');
+      if (res.kind === 'backup' && res.trips.length > 1) { openRestorePick(res.trips); return; }
+      const t = res.kind === 'backup' ? res.trips[0] : res.trip;
       const same = TS.get(t.id);
       let replace = false;
       if (same) {
-        replace = await PQ.ask(`이미 있는 여행 ‘${same.name}’이에요. 가져온 내용으로 덮어쓸까요?`, '덮어쓰기', true);
+        replace = await PQ.ask(`이미 있는 여행 ‘${same.name}’이에요. 업로드한 내용으로 덮어쓸까요?`, '덮어쓰기', true);
         if (!replace && !await PQ.ask(`그럼 ‘${t.name}’을 새 여행으로 따로 추가할까요?`, '따로 추가')) return;
       }
       if (replace && PQ.state.id === t.id) PQ.clearTrip();
-      TS.addImported(t, replace);
-      PQ.closeSheet('#importSheet');
-      renderList();
-      PQ.toast(`‘${t.name}’을 ${replace ? '덮어썼어요' : '추가했어요'}`);
+      const added = TS.addImported(t, replace);
+      openTrip(added.id);
+      PQ.toast(`‘${added.name}’을 불러왔어요`);
     });
   });
+
+  // ---------- 여행 고르기 시트 (백업 / 복원 공용) ----------
+  let pick = null; // { trips, selected:Set, onGo, mode }
+  function renderPick() {
+    const { trips, selected, mode } = pick;
+    $('#pickList').innerHTML = trips.map(t => {
+      const exists = mode === 'restore' && TS.get(t.id);
+      const ex = (t.expenses || []).length;
+      return `<li><label class="pick-row">
+        <input type="checkbox" data-id="${esc(t.id)}" ${selected.has(t.id) ? 'checked' : ''}>
+        <span class="pr-main"><b>${esc(t.name)}</b><small>${period(t)} · 일정 ${itemCount(t)}개 · 지출 ${ex}건</small>
+        ${exists ? '<span class="pr-tag">이미 있음 → 덮어쓰기</span>' : mode === 'restore' ? '<span class="pr-tag new">새로 추가</span>' : ''}</span>
+      </label></li>`;
+    }).join('');
+    const n = selected.size;
+    $('#pickAll').checked = n === trips.length;
+    $('#pickCount').textContent = `${n} / ${trips.length}개`;
+    $('#btnPickGo').textContent = mode === 'backup' ? `${n}개 백업` : `${n}개 복원`;
+    $('#btnPickGo').disabled = !n;
+  }
+  function openPick(opts) {
+    pick = Object.assign({ selected: new Set(opts.trips.map(t => t.id)) }, opts);
+    $('#pickTitle').textContent = opts.title;
+    $('#pickHint').textContent = opts.hint;
+    renderPick();
+    PQ.openSheet('#pickSheet');
+  }
+  $('#pickList').addEventListener('change', e => {
+    const cb = e.target.closest('input[data-id]');
+    if (!cb) return;
+    if (cb.checked) pick.selected.add(cb.dataset.id); else pick.selected.delete(cb.dataset.id);
+    renderPick();
+  });
+  $('#pickAll').addEventListener('change', e => {
+    pick.selected = e.target.checked ? new Set(pick.trips.map(t => t.id)) : new Set();
+    renderPick();
+  });
+  $('#btnPickGo').addEventListener('click', () => { if (pick && pick.selected.size) pick.onGo([...pick.selected]); });
+
+  // ---------- 백업 · 복원 ----------
+  $('#btnTripsMenu').addEventListener('click', () => PQ.openSheet('#tripsMenuSheet'));
 
   $('#btnBackupAll').addEventListener('click', () => {
     PQ.closeSheet('#tripsMenuSheet');
     if (!TS.trips.length) { PQ.toast('백업할 여행이 없어요'); return; }
-    PQ.showExport(`전체 백업 (여행 ${TS.trips.length}개)`, TS.exportAll(), 'trips-backup');
+    openPick({
+      mode: 'backup', trips: TS.trips,
+      title: '백업할 여행 고르기',
+      hint: '고른 여행을 파일 하나로 저장해요. 폰을 바꾸거나 다시 설치할 때 복원하기로 되살릴 수 있어요.',
+      onGo: ids => {
+        PQ.closeSheet('#pickSheet');
+        const stamp = TS.todayISO().replace(/-/g, '');
+        PQ.showExport(`백업 (여행 ${ids.length}개)`, TS.exportSome(ids), `trips-backup-${stamp}`);
+      },
+    });
   });
 
-  async function restore(trips) {
-    const names = trips.map(t => t.name).slice(0, 5).join(', ') + (trips.length > 5 ? ' 외' : '');
-    if (!await PQ.ask(`백업의 여행 ${trips.length}개(${names})로 복원해요. 지금 있는 여행 ${TS.trips.length}개는 모두 지워져요. 계속할까요?`, '복원', true)) return;
-    TS.restoreAll(trips);
-    PQ.clearTrip();
-    renderList();
-    show('#pageTrips');
-    PQ.toast(`여행 ${trips.length}개를 복원했어요`);
+  function openRestorePick(trips) {
+    openPick({
+      mode: 'restore', trips,
+      title: '복원할 여행 고르기',
+      hint: '고른 여행만 복원해요. 이미 있는 여행은 백업 내용으로 덮어쓰고, 나머지 여행은 그대로 둬요.',
+      onGo: async ids => {
+        const chosen = trips.filter(t => ids.includes(t.id));
+        const over = chosen.filter(t => TS.get(t.id));
+        if (over.length && !await PQ.ask(`${over.map(t => `‘${TS.get(t.id).name}’`).join(', ')}은(는) 이미 있어서 백업 내용으로 덮어써요. 계속할까요?`, '복원', true)) return;
+        chosen.forEach(t => {
+          const replace = !!TS.get(t.id);
+          if (replace && PQ.state.id === t.id) PQ.clearTrip();
+          TS.addImported(t, replace);
+        });
+        PQ.closeSheet('#pickSheet');
+        renderList();
+        show('#pageTrips');
+        PQ.toast(`여행 ${chosen.length}개를 복원했어요`);
+      },
+    });
   }
+
   $('#btnRestoreAll').addEventListener('click', () => {
     PQ.closeSheet('#tripsMenuSheet');
-    PQ.showImport('전체 복원', '전체 백업 JSON을 고르거나 붙여넣으세요. 지금 있는 여행은 모두 백업 내용으로 바뀌어요.', text => {
+    PQ.showImport('복원하기', '백업 파일(JSON)을 고르거나 내용을 붙여넣으세요. 다음 화면에서 복원할 여행을 골라요.', text => {
       let res;
-      try { res = TS.parseImport(text); } catch (err) { PQ.toast('복원 실패: ' + (err instanceof SyntaxError ? 'JSON 형식 오류' : err.message)); return; }
-      if (res.kind !== 'backup') { PQ.toast('전체 백업 파일이 아니에요. 여행 하나는 ‘여행 JSON 가져오기’를 쓰세요'); return; }
+      try { res = TS.parseImport(text); } catch (err) { importErr(err); return; }
       PQ.closeSheet('#importSheet');
-      restore(res.trips);
+      openRestorePick(res.kind === 'backup' ? res.trips : [res.trip]);
     });
   });
 

@@ -232,6 +232,11 @@
   function exportAll() {
     return JSON.stringify({ app: APP, kind: 'backup', version: 2, exportedAt: new Date().toISOString(), trips: db.trips }, null, 2);
   }
+  // 고른 여행만 백업
+  function exportSome(ids) {
+    const trips = db.trips.filter(t => ids.includes(t.id));
+    return JSON.stringify({ app: APP, kind: 'backup', version: 2, exportedAt: new Date().toISOString(), trips }, null, 2);
+  }
   // 반환: { kind: 'trip', trip } | { kind: 'backup', trips }
   function parseImport(text) {
     const raw = JSON.parse(text);
@@ -274,7 +279,7 @@
     uiFor: id => (db.ui[id] = db.ui[id] || {}),
     get migrated() { return migrated; },
     save, get, create, remove, duplicate, updateInfo,
-    exportTrip, exportAll, parseImport, addImported, restoreAll,
+    exportTrip, exportAll, exportSome, parseImport, addImported, restoreAll,
     // 여행이 하나도 없을 때 화면이 깨지지 않게 쓰는 빈 여행 (저장 안 됨)
     blank: () => normalizeTrip({ id: '__blank__', name: '', start: todayISO(), end: todayISO(), currency: 'VND' }),
   };

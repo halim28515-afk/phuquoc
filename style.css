@@ -673,3 +673,21 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .start-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .start-actions .link-btn { font-size: 14px; padding: 6px; }
 .install-help ol { margin: 0 0 8px; padding-left: 20px; line-height: 1.8; font-size: 15px; }
+
+/* 업로드 · 여행 고르기 */
+.upload-box { margin-bottom: 4px; }
+.upload-box .method-btn { width: 100%; padding: 14px; }
+.upload-box .fi-or { margin: 16px 0 12px; }
+.pick-all { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 4px 2px 8px; }
+.pick-all label { display: flex; align-items: center; gap: 8px; }
+.pick-all span { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.pick-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; max-height: 50vh; overflow-y: auto; }
+.pick-list li { border-bottom: 1px solid var(--line); }
+.pick-list li:last-child { border-bottom: 0; }
+.pick-row { display: flex; gap: 10px; align-items: flex-start; padding: 11px 12px; cursor: pointer; }
+.pick-row input, .pick-all input { width: 18px; height: 18px; accent-color: var(--primary); margin: 2px 0 0; }
+.pr-main { flex: 1; min-width: 0; }
+.pr-main b { display: block; font-size: 15px; }
+.pr-main small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.pr-tag { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--sample-bg); color: var(--sample-fg); }
+.pr-tag.new { background: var(--primary-soft); color: var(--primary); }

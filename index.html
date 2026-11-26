@@ -213,6 +213,12 @@
       <span class="step" id="newStep">1 / 2</span>
     </header>
     <form class="page-body new-form" id="newForm" autocomplete="off" novalidate>
+      <div class="upload-box" id="nUploadBox">
+        <button type="button" class="method-btn" id="btnUploadTrip">
+          <span class="mi">📥</span><span><b>여행 파일 업로드</b><small>다른 폰에서 공유받은 여행이나 백업 파일(JSON)로 바로 만들기</small></span>
+        </button>
+        <div class="fi-or"><span>또는 직접 입력</span></div>
+      </div>
       <label>여행 이름 <span class="req">*</span>
         <input type="text" id="nName" maxlength="40" placeholder="예) 방콕 가족여행">
       </label>
@@ -285,10 +291,9 @@
   <div class="sheet-backdrop" id="tripsMenuSheet" hidden>
     <div class="sheet">
       <div class="sheet-grip"></div>
-      <h2>가져오기 · 백업</h2>
-      <button class="sheet-item" id="btnImportTrip">⬆️ 여행 JSON 가져오기 (공유받은 여행)</button>
-      <button class="sheet-item" id="btnBackupAll">💾 전체 백업 (모든 여행)</button>
-      <button class="sheet-item" id="btnRestoreAll">♻️ 전체 복원</button>
+      <h2>백업 · 복원</h2>
+      <button class="sheet-item" id="btnBackupAll">💾 백업하기 (여행 골라서)</button>
+      <button class="sheet-item" id="btnRestoreAll">♻️ 복원하기 (백업 파일에서 골라서)</button>
       <button class="sheet-item install-btn" hidden>📲 홈 화면에 추가 (앱처럼 쓰기)</button>
       <button class="sheet-item cancel" data-close>닫기</button>
     </div>
@@ -336,6 +341,21 @@
           <button type="button" class="btn ghost" data-close>취소</button>
           <button type="button" class="btn primary" id="btnFiAdd">추가</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 여행 고르기 (백업 / 복원) -->
+  <div class="sheet-backdrop" id="pickSheet" hidden>
+    <div class="sheet">
+      <div class="sheet-grip"></div>
+      <h2 id="pickTitle">여행 고르기</h2>
+      <p class="hint" id="pickHint"></p>
+      <div class="pick-all"><label><input type="checkbox" id="pickAll" checked> 전체 선택</label><span id="pickCount"></span></div>
+      <ul class="pick-list" id="pickList"></ul>
+      <div class="sheet-buttons">
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="button" class="btn primary" id="btnPickGo">확인</button>
       </div>
     </div>
   </div>
