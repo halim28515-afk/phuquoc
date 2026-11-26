@@ -503,3 +503,13 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .card.sel { outline: 2px solid var(--primary); outline-offset: -2px; }
 .map-credit { margin-top: 2px; }
 .leaflet-control-attribution { font-size: 10px; line-height: 1.4; }
+
+/* 동선 탭: 날짜·숙박·지도 고정 */
+.route-top {
+  position: sticky; top: var(--appbar-h, 0px); z-index: 5;
+  background: var(--bg); padding-bottom: 6px;
+  box-shadow: 0 6px 8px -8px rgba(0,0,0,.25);
+}
+.route-top .day-chips { padding-top: 10px; }
+#tab-route .sample-banner { margin-top: 8px; }
+.map-notice { top: auto; bottom: 22px; }

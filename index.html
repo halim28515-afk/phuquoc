@@ -30,19 +30,22 @@
     <main>
       <!-- 동선 -->
       <section class="tab-panel active" id="tab-route">
-        <nav class="day-chips" id="dayChips"></nav>
+        <!-- 날짜·숙박·지도는 고정, 아래 일정만 스크롤 -->
+        <div class="route-top" id="routeTop">
+          <nav class="day-chips" id="dayChips"></nav>
+          <div class="day-head" id="dayHead"></div>
+          <div class="map-wrap">
+            <div id="map" aria-label="일정 지도"></div>
+            <div class="map-notice" id="mapNotice" hidden>지도 배경을 불러오지 못했어요. 마커와 이동 순서는 그대로 볼 수 있어요.</div>
+            <div class="map-empty" id="mapEmpty" hidden>좌표가 있는 일정이 없어요. 일정을 눌러 장소를 검색해 보세요.</div>
+          </div>
+        </div>
         <div class="sample-banner" id="sampleBanner" hidden>
           <span>예시 일정이에요. 좌표는 대략값이에요.</span>
           <span class="sb-actions">
             <button type="button" id="btnSampleClear">예시 지우기</button>
             <button type="button" id="btnSampleKeep">계속 쓰기</button>
           </span>
-        </div>
-        <div class="day-head" id="dayHead"></div>
-        <div class="map-wrap">
-          <div id="map" aria-label="일정 지도"></div>
-          <div class="map-notice" id="mapNotice" hidden>지도 배경을 불러오지 못했어요. 마커와 이동 순서는 그대로 볼 수 있어요.</div>
-          <div class="map-empty" id="mapEmpty" hidden>좌표가 있는 일정이 없어요. 일정을 눌러 장소를 검색해 보세요.</div>
         </div>
         <ul class="card-list" id="cardList"></ul>
         <div class="empty" id="emptyState" hidden>

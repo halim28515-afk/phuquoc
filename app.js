@@ -374,6 +374,7 @@
     currentDay = chip.dataset.date;
     saveUI();
     render();
+    $('#screen').scrollTop = 0; // 날짜 바꾸면 일정 목록 맨 위부터
   }));
 
   $('#cardList').addEventListener('click', e => {
@@ -549,6 +550,12 @@
   }
   window.addEventListener('resize', fitDevice);
   fitDevice();
+
+  // 고정 영역(날짜·지도)이 상단 바 바로 아래에 붙도록 상단 바 높이를 CSS 변수로
+  const appbar = document.querySelector('.appbar');
+  const setAppbarH = () => $('#device').style.setProperty('--appbar-h', appbar.offsetHeight + 'px');
+  if (window.ResizeObserver) new ResizeObserver(setAppbarH).observe(appbar);
+  setAppbarH();
 
   render();
   initSortable();
