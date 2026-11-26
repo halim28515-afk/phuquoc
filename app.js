@@ -5,11 +5,11 @@
   const STORAGE_KEY = 'pq-trip-v1';
   const UI_KEY = 'pq-ui-v1';
 
-  // 여행 정보: 2026-12-10 ~ 12-14, 1~3박 남부 숙소, 4박 그린베이
+  // 여행 정보: 2026-12-10 ~ 12-14, 1~3박 인터컨티넨탈 푸꾸옥, 4박 그린베이
   const TRIP = [
-    { date: '2026-12-10', stay: '남부 숙소', note: '도착 · 1박' },
-    { date: '2026-12-11', stay: '남부 숙소', note: '2박' },
-    { date: '2026-12-12', stay: '남부 숙소', note: '3박' },
+    { date: '2026-12-10', stay: '인터컨티넨탈 푸꾸옥', note: '도착 · 1박' },
+    { date: '2026-12-11', stay: '인터컨티넨탈 푸꾸옥', note: '2박' },
+    { date: '2026-12-12', stay: '인터컨티넨탈 푸꾸옥', note: '3박' },
     { date: '2026-12-13', stay: '그린베이', note: '숙소 이동 · 4박' },
     { date: '2026-12-14', stay: null, note: '귀국' },
   ];
@@ -19,7 +19,7 @@
   const SAMPLE = {
     '2026-12-10': [
       ['14:00', '푸꾸옥 국제공항 도착', '그랩으로 숙소 이동', 10.1698, 103.9931],
-      ['15:30', '남부 숙소 체크인', '', null, null],
+      ['15:30', '인터컨티넨탈 푸꾸옥 체크인', '', null, null],
       ['18:00', '선셋타운 키스브릿지', '일몰 + 불꽃쇼', 10.0255, 104.0137],
     ],
     '2026-12-11': [
@@ -30,7 +30,7 @@
       ['08:30', '남부 호핑투어 픽업', '수영복, 선크림', null, null],
     ],
     '2026-12-13': [
-      ['11:00', '남부 숙소 체크아웃', '', null, null],
+      ['11:00', '인터컨티넨탈 푸꾸옥 체크아웃', '', null, null],
       ['14:00', '그린베이 체크인', '', null, null],
       ['19:00', '즈엉동 야시장', '해산물 저녁', 10.2170, 103.9600],
     ],
@@ -75,6 +75,7 @@
         }));
     });
     if (raw.sample === true) data.sample = true;
+    if (raw.fare && typeof raw.fare === 'object') data.fare = raw.fare; // 그랩 요금 설정 (map.js에서 검증)
     return data;
   }
 
@@ -171,8 +172,7 @@
 
   // ---------- 렌더 ----------
   function renderChips() {
-    const wrap = $('#dayChips');
-    wrap.innerHTML = allDates().map(date => {
+    const html = allDates().map(date => {
       const { m, d, wd, idx } = dayInfo(date);
       const label = idx >= 0 ? 'Day ' + (idx + 1) : '기타';
       const n = (state.days[date] || []).length;
@@ -182,10 +182,14 @@
         <span class="cnt">${n ? n + '개' : '–'}</span>
       </button>`;
     }).join('');
-    const active = wrap.querySelector('.chip.active');
-    if (active) {
-      wrap.scrollLeft = active.offsetLeft - (wrap.clientWidth - active.offsetWidth) / 2;
-    }
+    // 동선 탭과 지도 탭이 같은 날짜 칩을 씀
+    document.querySelectorAll('.day-chips').forEach(wrap => {
+      wrap.innerHTML = html;
+      const active = wrap.querySelector('.chip.active');
+      if (active && wrap.clientWidth) {
+        wrap.scrollLeft = active.offsetLeft - (wrap.clientWidth - active.offsetWidth) / 2;
+      }
+    });
   }
 
   function renderHead() {
@@ -218,10 +222,12 @@
     $('#sampleBanner').hidden = !state.sample;
   }
 
+  const renderHooks = [];
   function render() {
     renderChips();
     renderHead();
     renderCards();
+    renderHooks.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
   }
 
   // ---------- 드래그 정렬 ----------
@@ -272,6 +278,8 @@
     $('#fMemo').value = item ? item.memo : '';
     $('#fLat').value = item && item.lat !== null ? item.lat : '';
     $('#fLng').value = item && item.lng !== null ? item.lng : '';
+    const sr = $('#searchResults');
+    if (sr) { sr.innerHTML = ''; sr.hidden = true; }
     openSheet('#editSheet');
     $('#editForm').scrollTop = 0;
     if (!item) setTimeout(() => $('#fPlace').focus(), 50);
@@ -359,13 +367,13 @@
   });
 
   // ---------- 이벤트 ----------
-  $('#dayChips').addEventListener('click', e => {
+  document.querySelectorAll('.day-chips').forEach(wrap => wrap.addEventListener('click', e => {
     const chip = e.target.closest('.chip');
     if (!chip) return;
     currentDay = chip.dataset.date;
     saveUI();
     render();
-  });
+  }));
 
   $('#cardList').addEventListener('click', e => {
     if (e.target.closest('.handle') || e.target.closest('a')) return;
@@ -376,11 +384,17 @@
   });
 
   $('#btnAdd').addEventListener('click', () => openEditor(null));
-  $('#btnMenu').addEventListener('click', () => openSheet('#menuSheet'));
+  let currentTab = 'route';
+  $('#btnMenu').addEventListener('click', () => {
+    if (currentTab === 'map' && window.PQ.openFareSettings) window.PQ.openFareSettings();
+    else openSheet('#menuSheet');
+  });
 
   $('#btnSampleClear').addEventListener('click', async () => {
     if (!await ask('예시 일정을 모두 지우고 빈 일정으로 시작할까요?', '지우기', true)) return;
+    const fare = state.fare;
     state = emptyData();
+    if (fare) state.fare = fare;
     save();
     render();
     toast('예시 일정을 지웠어요');
@@ -461,6 +475,7 @@
     }
     const count = countAll(data);
     if (!await ask(`일정 ${count}개를 가져와요. 현재 일정은 모두 바뀌어요. 계속할까요?`, '가져오기')) return;
+    if (!data.fare && state.fare) data.fare = state.fare; // 파일에 요금 설정이 없으면 현재 값 유지
     state = data;
     delete state.sample;
     if (!state.days[currentDay]) currentDay = TRIP[0].date;
@@ -495,14 +510,36 @@
       const tab = btn.dataset.tab;
       document.querySelectorAll('.tabbar .tab').forEach(b => b.classList.toggle('active', b === btn));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
-      $('#routeActions').style.visibility = tab === 'route' ? 'visible' : 'hidden';
+      currentTab = tab;
+      const btn2 = $('#btnMenu');
+      btn2.textContent = tab === 'map' ? '⚙︎' : '⋯';
+      btn2.setAttribute('aria-label', tab === 'map' ? '그랩 요금 설정' : '메뉴');
+      $('#routeActions').style.visibility = tab === 'route' || tab === 'map' ? 'visible' : 'hidden';
       $('#btnAdd').hidden = tab !== 'route';
       $('#screen').scrollTop = 0;
+      document.dispatchEvent(new CustomEvent('pq:tab', { detail: tab }));
     });
   });
 
-  // 다른 탭에서 쓸 수 있도록 노출
-  window.PQ = { get state() { return state; }, TRIP };
+  // 다른 탭(map.js 등)에서 쓰는 API
+  window.PQ = {
+    get state() { return state; },
+    get currentDay() { return currentDay; },
+    TRIP, esc, dayInfo, toast, ask, save, render, findItem,
+    openEditor: item => openEditor(item),
+    openSheet, closeSheet,
+    onRender: fn => renderHooks.push(fn),
+  };
+
+  // 데스크톱 미리보기: iPhone 프레임(852pt + 테두리)이 창보다 크면 축소
+  function fitDevice() {
+    const dev = $('#device');
+    const framed = matchMedia('(min-width: 640px) and (min-height: 600px)').matches;
+    const s = framed ? Math.min(1, (window.innerHeight - 48) / 878, (window.innerWidth - 48) / 419) : 1;
+    dev.style.setProperty('--s', s.toFixed(3));
+  }
+  window.addEventListener('resize', fitDevice);
+  fitDevice();
 
   render();
   initSortable();

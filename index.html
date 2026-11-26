@@ -5,11 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0e7c86">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>푸꾸옥 여행</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="device" id="device">
+  <!-- 데스크톱 미리보기용 iPhone 상태바 (폰에서는 숨김) -->
+  <div class="statusbar" aria-hidden="true"><span>9:41</span><span class="sb-r">▂▄▆ <span class="batt"><i></i></span></span></div>
+  <div class="island" aria-hidden="true"></div>
+  <div class="home-ind" aria-hidden="true"></div>
   <div class="screen" id="screen">
     <header class="appbar">
       <div>
@@ -42,7 +48,14 @@
 
       <!-- 지도 -->
       <section class="tab-panel" id="tab-map">
-        <div class="placeholder"><div class="ph-icon">🗺️</div><p>지도 탭은 준비 중이에요.</p></div>
+        <nav class="day-chips" id="mapChips"></nav>
+        <div class="map-wrap">
+          <div id="map" aria-label="일정 지도"></div>
+          <div class="map-notice" id="mapNotice" hidden>지도 배경을 불러오지 못했어요. 마커와 이동 순서는 그대로 볼 수 있어요.</div>
+          <div class="map-empty" id="mapEmpty" hidden>좌표가 있는 일정이 없어요.<br>동선 탭에서 장소를 검색해 좌표를 넣어주세요.</div>
+        </div>
+        <ul class="stop-list" id="stopList"></ul>
+        <p class="map-credit">거리·시간: OSRM · 장소 검색: Nominatim · 지도 © OpenStreetMap</p>
       </section>
 
       <!-- 환전 -->
@@ -121,9 +134,12 @@
       <label>시간
         <input type="time" name="time" id="fTime">
       </label>
-      <label>장소명 <span class="req">*</span>
+      <label for="fPlace">장소명 <span class="req">*</span></label>
+      <div class="search-row">
         <input type="text" name="place" id="fPlace" required maxlength="80" placeholder="예) 즈엉동 야시장">
-      </label>
+        <button type="button" class="btn ghost" id="btnSearch">🔍 좌표 찾기</button>
+      </div>
+      <ul class="search-results" id="searchResults" hidden></ul>
       <label>메모
         <textarea name="memo" id="fMemo" rows="3" maxlength="500" placeholder="예약번호, 준비물 등"></textarea>
       </label>
@@ -145,6 +161,43 @@
     </form>
   </div>
 
+  <!-- 장소 정보 시트 (지도) -->
+  <div class="sheet-backdrop light" id="infoSheet" hidden>
+    <div class="sheet">
+      <div class="sheet-grip"></div>
+      <h2 id="infoTitle"></h2>
+      <p class="info-sub" id="infoSub"></p>
+      <div class="leg" id="infoLeg"></div>
+      <div class="fares" id="infoFares"></div>
+      <div class="info-actions">
+        <a class="btn primary" id="btnGmaps" href="#" target="_blank" rel="noopener">구글맵 길찾기</a>
+        <button type="button" class="btn grab" id="btnGrab">그랩 열기</button>
+      </div>
+      <div class="sheet-buttons">
+        <button type="button" class="btn ghost" id="btnInfoEdit">일정 수정</button>
+        <button type="button" class="btn ghost" data-close>닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 그랩 요금 설정 시트 -->
+  <div class="sheet-backdrop" id="fareSheet" hidden>
+    <form class="sheet" id="fareForm" autocomplete="off">
+      <div class="sheet-grip"></div>
+      <h2>그랩 예상 요금 기준</h2>
+      <p class="hint">요금 = 기본요금(기본거리 포함) + 초과 km × km당 + 분 × 분당, 그 다음 할증 배율을 곱해요. 현지 앱 요금을 보고 맞춰 두세요.</p>
+      <div id="fareFields"></div>
+      <label>할증 배율 (출퇴근·비 올 때 1.2~1.5)
+        <input type="number" id="fSurge" step="0.05" min="0.5" max="3" inputmode="decimal">
+      </label>
+      <div class="sheet-buttons">
+        <button type="button" class="btn ghost" id="btnFareReset">기본값</button>
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </div>
+
   <!-- 확인 대화상자 -->
   <div class="sheet-backdrop center" id="askSheet" hidden>
     <div class="dialog" role="alertdialog" aria-labelledby="askMsg">
@@ -160,6 +213,8 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="app.js"></script>
+<script src="map.js"></script>
 </body>
 </html>
