@@ -266,7 +266,8 @@
     const f = getFare();
     const rows = FARE_TYPES.map(({ key, name }) => {
       const e = estimate(r.km, r.min, f[key], f.surge);
-      return `<div class="fare-row"><span>${name}</span><b>${fmtVnd(e.low)} ~ ${fmtVnd(e.high)}</b></div>`;
+      const krw = PQ.fx ? `<span class="krw">약 ${PQ.fx.fmtKrw(e.low).replace('원', '')} ~ ${PQ.fx.fmtKrw(e.high)}</span>` : '';
+      return `<div class="fare-row"><span>${name}</span><b>${fmtVnd(e.low)} ~ ${fmtVnd(e.high)}${krw}</b></div>`;
     }).join('');
     $('#infoFares').innerHTML = `<h3>그랩 요금 <span class="badge">예상치</span></h3>${rows}
       <p class="hint">거리 기반 계산이라 실제 요금과 달라요. 기준값은 지도 탭 오른쪽 위 ⚙︎에서 바꿀 수 있어요.${f.surge !== 1 ? ` (할증 ×${f.surge} 적용)` : ''}</p>`;

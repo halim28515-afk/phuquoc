@@ -339,3 +339,53 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .fare-group { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 2px; margin-bottom: 10px; }
 .fare-group legend { font-size: 13px; font-weight: 700; padding: 0 4px; }
 .fare-group .row2 label { margin-bottom: 8px; }
+
+/* ---------- 환전 탭 ---------- */
+.fx { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+.fx-card { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 14px; }
+.fx-field { display: block; }
+.fx-field .cur { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.fx-field .cur b { color: var(--text); margin-right: 4px; }
+.fx-input { display: flex; align-items: baseline; gap: 6px; border-bottom: 2px solid var(--line); padding-bottom: 4px; }
+.fx-input:focus-within { border-color: var(--primary); }
+.fx-input input {
+  flex: 1; min-width: 0; border: 0; background: transparent; outline: none; padding: 2px 0;
+  font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text);
+}
+.fx-input .unit { font-size: 18px; color: var(--muted); font-weight: 600; }
+.fx-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.fx-quick button {
+  border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 4px;
+  font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.fx-quick button:active { background: var(--primary-soft); border-color: var(--primary); }
+.fx-tip { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+.fx-divider { display: flex; align-items: center; gap: 8px; margin: 12px 0; color: var(--muted); }
+.fx-divider::before, .fx-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.fx-divider span { font-size: 16px; }
+
+.fx-rate { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 12px 14px 14px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: transparent; border-radius: 8px; padding: 8px; font-size: 14px; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--primary); font-weight: 700; box-shadow: var(--shadow); }
+.fx-rate-main { margin-top: 12px; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fx-rate-main small { display: block; font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.fx-status { margin-top: 6px; font-size: 12px; color: var(--muted); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.fx-status.warn { color: var(--sample-fg); }
+.fx-status button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--text); }
+.fx-manual { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.fx-manual[hidden] { display: none; }
+.fx-manual label { display: block; font-size: 13px; color: var(--muted); }
+.fx-manual input {
+  display: block; width: 100%; margin-top: 4px; padding: 10px 12px; border: 1px solid var(--line);
+  border-radius: 10px; background: var(--bg); font-size: 16px; font-variant-numeric: tabular-nums;
+}
+.fx-manual .btn { margin-top: 10px; width: 100%; }
+
+.fx-table-wrap { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 12px 14px 6px; }
+.fx-table-wrap h3 { margin: 0 0 4px; font-size: 14px; }
+.fx-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
+.fx-table td { padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.fx-table tr:last-child td { border-bottom: 0; }
+.fx-table td:last-child { text-align: right; font-weight: 600; }
+.fx-table tr { cursor: pointer; }

@@ -76,6 +76,7 @@
     });
     if (raw.sample === true) data.sample = true;
     if (raw.fare && typeof raw.fare === 'object') data.fare = raw.fare; // 그랩 요금 설정 (map.js에서 검증)
+    if (raw.fx && typeof raw.fx === 'object') data.fx = raw.fx;         // 환율 설정 (fx.js에서 검증)
     return data;
   }
 
@@ -392,9 +393,10 @@
 
   $('#btnSampleClear').addEventListener('click', async () => {
     if (!await ask('예시 일정을 모두 지우고 빈 일정으로 시작할까요?', '지우기', true)) return;
-    const fare = state.fare;
+    const { fare, fx } = state;
     state = emptyData();
     if (fare) state.fare = fare;
+    if (fx) state.fx = fx;
     save();
     render();
     toast('예시 일정을 지웠어요');
@@ -475,7 +477,8 @@
     }
     const count = countAll(data);
     if (!await ask(`일정 ${count}개를 가져와요. 현재 일정은 모두 바뀌어요. 계속할까요?`, '가져오기')) return;
-    if (!data.fare && state.fare) data.fare = state.fare; // 파일에 요금 설정이 없으면 현재 값 유지
+    if (!data.fare && state.fare) data.fare = state.fare; // 파일에 설정이 없으면 현재 값 유지
+    if (!data.fx && state.fx) data.fx = state.fx;
     state = data;
     delete state.sample;
     if (!state.days[currentDay]) currentDay = TRIP[0].date;
