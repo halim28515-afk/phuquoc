@@ -471,3 +471,13 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .people-list .muted { padding: 8px 0; }
 .people-add { display: flex; gap: 8px; }
 .people-add input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 16px; }
+
+/* 날짜 칩: 일정 개수 배지 (앱 알림 개수처럼) */
+.chip .d1 { display: inline-flex; align-items: center; gap: 4px; }
+.badge-n {
+  min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px;
+  background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; line-height: 17px;
+  text-align: center; font-variant-numeric: tabular-nums;
+}
+.chip.active .badge-n { background: #fff; color: var(--primary); }
+.chip.active .d1 { opacity: 1; }

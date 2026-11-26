@@ -7,10 +7,10 @@
 
   // 여행 정보: 2026-12-10 ~ 12-14, 1~3박 인터컨티넨탈 푸꾸옥, 4박 그린베이
   const TRIP = [
-    { date: '2026-12-10', stay: '인터컨티넨탈 푸꾸옥', note: '도착 · 1박' },
-    { date: '2026-12-11', stay: '인터컨티넨탈 푸꾸옥', note: '2박' },
-    { date: '2026-12-12', stay: '인터컨티넨탈 푸꾸옥', note: '3박' },
-    { date: '2026-12-13', stay: '그린베이', note: '숙소 이동 · 4박' },
+    { date: '2026-12-10', stay: '인터컨티넨탈 푸꾸옥', note: '도착' },
+    { date: '2026-12-11', stay: '인터컨티넨탈 푸꾸옥', note: '' },
+    { date: '2026-12-12', stay: '인터컨티넨탈 푸꾸옥', note: '' },
+    { date: '2026-12-13', stay: '그린베이', note: '숙소 이동' },
     { date: '2026-12-14', stay: null, note: '귀국' },
   ];
   const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
@@ -180,9 +180,8 @@
       const label = idx >= 0 ? 'Day ' + (idx + 1) : '기타';
       const n = (state.days[date] || []).length;
       return `<button class="chip${date === currentDay ? ' active' : ''}" data-date="${date}">
-        <span class="d1">${label}</span>
+        <span class="d1">${label}${n ? `<span class="badge-n" aria-label="일정 ${n}개">${n}</span>` : ''}</span>
         <span class="d2">${m}/${d} (${wd})</span>
-        <span class="cnt">${n ? n + '개' : '–'}</span>
       </button>`;
     }).join('');
     // 동선 탭과 지도 탭이 같은 날짜 칩을 씀
@@ -199,7 +198,7 @@
     const { trip } = dayInfo(currentDay);
     const el = $('#dayHead');
     if (!trip) { el.innerHTML = '<span>여행 기간 외 날짜</span>'; return; }
-    el.innerHTML = `<span>${esc(trip.note)}</span>` +
+    el.innerHTML = (trip.note ? `<span>${esc(trip.note)}</span>` : '') +
       (trip.stay ? `<span>🏨 숙박 <b>${esc(trip.stay)}</b></span>` : '<span>✈️ 체크아웃 · 공항</span>');
   }
 
@@ -207,16 +206,11 @@
     const list = state.days[currentDay] || [];
     const ul = $('#cardList');
     ul.innerHTML = list.map((it, i) => {
-      const hasCoord = it.lat !== null && it.lng !== null;
-      const coord = hasCoord
-        ? `<a class="coord" href="https://www.google.com/maps/search/?api=1&query=${it.lat},${it.lng}" target="_blank" rel="noopener">📍 ${it.lat}, ${it.lng}</a>`
-        : '';
       return `<li class="card" data-id="${esc(it.id)}">
         <div class="time${it.time ? '' : ' none'}">${it.time || '--:--'}</div>
         <div class="body">
-          <div class="place"><span class="idx">${i + 1}</span>${esc(it.place)}</div>
+          <div class="place">${esc(it.place)}</div>
           ${it.memo ? `<div class="memo">${esc(it.memo)}</div>` : ''}
-          ${coord}
           ${window.PQ && PQ.linkedSpent ? PQ.linkedSpent(it.id) : ''}
         </div>
         <div class="card-side">
