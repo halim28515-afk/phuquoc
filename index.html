@@ -64,16 +64,27 @@
               <span class="fx-input"><input id="fxVnd" type="text" inputmode="text" enterkeyhint="done" autocomplete="off" spellcheck="false" placeholder="0"><span class="unit">₫</span></span>
             </label>
             <div class="fx-quick">
-              <button type="button" data-vnd="100000">10만 동</button>
-              <button type="button" data-vnd="200000">20만 동</button>
-              <button type="button" data-vnd="500000">50만 동</button>
+              <button type="button" data-cur="vnd" data-v="100000">10만 동</button>
+              <button type="button" data-cur="vnd" data-v="200000">20만 동</button>
+              <button type="button" data-cur="vnd" data-v="500000">50만 동</button>
             </div>
             <p class="fx-tip">150k = 150,000동, 50만 = 500,000동으로 입력돼요</p>
-            <div class="fx-divider"><span>⇅</span></div>
-            <label class="fx-field" for="fxKrw">
+
+            <label class="fx-field fx-gap" for="fxKrw">
               <span class="cur"><b>KRW</b> 원화</span>
               <span class="fx-input"><input id="fxKrw" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0"><span class="unit">원</span></span>
             </label>
+
+            <label class="fx-field fx-gap" for="fxUsd">
+              <span class="cur"><b>USD</b> 미국 달러</span>
+              <span class="fx-input"><span class="unit pre">$</span><input id="fxUsd" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0"></span>
+            </label>
+            <div class="fx-quick four">
+              <button type="button" data-cur="usd" data-v="10">$10</button>
+              <button type="button" data-cur="usd" data-v="20">$20</button>
+              <button type="button" data-cur="usd" data-v="50">$50</button>
+              <button type="button" data-cur="usd" data-v="100">$100</button>
+            </div>
           </div>
 
           <div class="fx-rate">
@@ -81,17 +92,27 @@
               <button type="button" role="tab" data-mode="live" id="fxModeLive">실시간 환율</button>
               <button type="button" role="tab" data-mode="manual" id="fxModeManual">내 환전 환율</button>
             </div>
-            <div class="fx-rate-main" id="fxRateMain">–</div>
+            <ul class="fx-rates" id="fxRates"></ul>
             <div class="fx-status" id="fxStatus"></div>
             <div class="fx-manual" id="fxManual" hidden>
-              <p class="hint">환전 영수증의 두 금액을 넣으면 그 비율로 계산해요.</p>
-              <div class="row2">
-                <label>낸 원화
-                  <input id="fxPayKrw" type="text" inputmode="decimal" autocomplete="off" placeholder="500,000">
-                </label>
-                <label>받은 동
-                  <input id="fxGotVnd" type="text" inputmode="text" autocomplete="off" placeholder="9,250,000">
-                </label>
+              <p class="hint">환전 영수증의 낸 금액과 받은 금액을 넣으세요. 비워 둔 쌍은 실시간 환율을 써요.</p>
+              <div class="pair"><div class="pair-t">원 → 동</div>
+                <div class="row2">
+                  <label>낸 원화<input id="mKV_from" type="text" inputmode="decimal" autocomplete="off" placeholder="500,000"></label>
+                  <label>받은 동<input id="mKV_to" type="text" inputmode="text" autocomplete="off" placeholder="9,250,000"></label>
+                </div>
+              </div>
+              <div class="pair"><div class="pair-t">달러 → 동</div>
+                <div class="row2">
+                  <label>낸 달러<input id="mUV_from" type="text" inputmode="decimal" autocomplete="off" placeholder="100"></label>
+                  <label>받은 동<input id="mUV_to" type="text" inputmode="text" autocomplete="off" placeholder="2,600,000"></label>
+                </div>
+              </div>
+              <div class="pair"><div class="pair-t">원 → 달러 (한국에서 달러 살 때)</div>
+                <div class="row2">
+                  <label>낸 원화<input id="mKU_from" type="text" inputmode="decimal" autocomplete="off" placeholder="1,400,000"></label>
+                  <label>받은 달러<input id="mKU_to" type="text" inputmode="decimal" autocomplete="off" placeholder="1,000"></label>
+                </div>
               </div>
               <button type="button" class="btn primary small" id="fxSaveManual">이 환율로 계산</button>
             </div>
