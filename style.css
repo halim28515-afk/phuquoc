@@ -481,3 +481,25 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 }
 .chip.active .badge-n { background: #fff; color: var(--primary); }
 .chip.active .d1 { opacity: 1; }
+
+/* ---------- 동선+지도 통합 · 촘촘한 일정 카드 ---------- */
+.tabbar { grid-template-columns: repeat(3, 1fr); }
+.day-head { margin: 8px 16px 0; padding: 7px 12px; font-size: 12px; }
+#tab-route .map-wrap { margin-top: 8px; }
+#map { height: min(30vh, 230px); min-height: 180px; }
+
+.card-list { margin-top: 8px; }
+.card {
+  align-items: center; gap: 8px; margin-bottom: 6px;
+  padding: 8px 4px 8px 12px; border-radius: 12px;
+}
+.card .time { flex: 0 0 44px; font-size: 14px; padding-top: 0; align-self: center; }
+.card .place { font-size: 15px; line-height: 1.3; }
+.card .memo { margin-top: 1px; font-size: 12px; line-height: 1.35; }
+.card .spent { margin-top: 3px; padding: 1px 7px; font-size: 11px; }
+.card .card-side { flex: 0 0 auto; flex-direction: row; align-items: center; gap: 0; }
+.card .card-side .handle { flex: 0 0 30px; width: 30px; height: 32px; font-size: 18px; }
+.card-exp { width: 30px; height: 30px; font-size: 14px; background: transparent; }
+.card.sel { outline: 2px solid var(--primary); outline-offset: -2px; }
+.map-credit { margin-top: 2px; }
+.leaflet-control-attribution { font-size: 10px; line-height: 1.4; }

@@ -383,7 +383,9 @@
     const card = e.target.closest('.card');
     if (!card) return;
     const found = findItem(card.dataset.id);
-    if (found) openEditor(found.item);
+    if (!found) return;
+    if (PQ.openInfo) PQ.openInfo(found.item.id); // 거리·요금·길찾기 시트 (수정은 시트 안에서)
+    else openEditor(found.item);
   });
 
   $('#btnAdd').addEventListener('click', () => {
@@ -391,9 +393,10 @@
     else openEditor(null);
   });
   let currentTab = 'route';
-  $('#btnMenu').addEventListener('click', () => {
-    if (currentTab === 'map' && window.PQ.openFareSettings) window.PQ.openFareSettings();
-    else openSheet('#menuSheet');
+  $('#btnMenu').addEventListener('click', () => openSheet('#menuSheet'));
+  $('#btnFare').addEventListener('click', () => {
+    closeSheet('#menuSheet');
+    if (window.PQ.openFareSettings) window.PQ.openFareSettings();
   });
 
   $('#btnSampleClear').addEventListener('click', async () => {
@@ -519,10 +522,7 @@
       document.querySelectorAll('.tabbar .tab').forEach(b => b.classList.toggle('active', b === btn));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
       currentTab = tab;
-      const btn2 = $('#btnMenu');
-      btn2.textContent = tab === 'map' ? '⚙︎' : '⋯';
-      btn2.setAttribute('aria-label', tab === 'map' ? '그랩 요금 설정' : '메뉴');
-      $('#routeActions').style.visibility = tab === 'route' || tab === 'map' ? 'visible' : 'hidden';
+      $('#routeActions').style.visibility = tab === 'route' ? 'visible' : 'hidden';
       $('#btnAdd').hidden = tab !== 'route' && tab !== 'settle';
       $('#btnAdd').setAttribute('aria-label', tab === 'settle' ? '지출 추가' : '일정 추가');
       $('#screen').scrollTop = 0;

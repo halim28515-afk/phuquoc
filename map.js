@@ -1,4 +1,4 @@
-/* 푸꾸옥 여행 앱 – 지도 탭, 거리/요금, 장소 검색 */
+/* 푸꾸옥 여행 앱 – 동선 탭 지도, 거리/요금, 장소 검색 */
 (function () {
   'use strict';
   const PQ = window.PQ;
@@ -135,8 +135,8 @@
   }
 
   function renderMap() {
-    if (!$('#tab-map').classList.contains('active')) return;
-    if (!ensureMap()) { renderStops(); return; }
+    if (!$('#tab-route').classList.contains('active')) return;
+    if (!ensureMap()) return;
     map.invalidateSize();
     markerLayer.clearLayers();
     lineLayer.clearLayers();
@@ -159,7 +159,7 @@
     if (pts.length > 1) {
       L.polyline(pts, { color: cssVar('--primary'), weight: 4, opacity: .85, dashArray: '8 8' }).addTo(lineLayer);
     }
-    $('#mapEmpty').hidden = pts.length > 0;
+    $('#mapEmpty').hidden = pts.length > 0 || !list.length; // 일정 자체가 없으면 아래 안내로 충분
     // 날짜나 좌표 구성이 바뀌었을 때만 화면 맞춤 (선택 시 지도가 튀지 않게)
     const fitKey = PQ.currentDay + '|' + pts.map(p => p.join(',')).join(';');
     if (fitKey !== lastFitKey) {
@@ -168,28 +168,7 @@
       else if (pts.length > 1) map.fitBounds(pts, { padding: [36, 36], maxZoom: 15 });
       else map.setView(PQ_CENTER, 10);
     }
-    renderStops();
-  }
-
-  // 지도 아래 장소 목록 + 이전 장소로부터의 거리
-  function renderStops() {
-    const list = dayList();
-    const ul = $('#stopList');
-    ul.innerHTML = list.map((it, i) => `
-      <li class="stop${hasCoord(it) ? '' : ' nocoord'}${it.id === selectedId ? ' sel' : ''}" data-id="${esc(it.id)}">
-        <span class="idx">${i + 1}</span>
-        <span class="st-time">${it.time || ''}</span>
-        <span class="st-place">${esc(it.place)}</span>
-        <span class="st-leg" data-leg="${esc(it.id)}">${hasCoord(it) ? '' : '좌표 없음'}</span>
-      </li>`).join('') || '<li class="muted" style="padding:16px 4px">이 날 일정이 없어요.</li>';
-    list.forEach((it, i) => {
-      const prev = prevWithCoord(list, i);
-      if (!hasCoord(it) || !prev) return;
-      getLeg(prev, it).then(leg => {
-        const el = ul.querySelector(`[data-leg="${CSS.escape(it.id)}"]`);
-        if (el) el.textContent = `${leg.src === 'osrm' ? '' : '약 '}${fmtKm(leg.km)} · ${fmtMin(leg.min)}`;
-      });
-    });
+    markSelectedCard();
   }
 
   function prevWithCoord(list, i) {
@@ -197,10 +176,11 @@
     return null;
   }
 
-  $('#stopList').addEventListener('click', e => {
-    const li = e.target.closest('.stop');
-    if (li) openInfo(li.dataset.id);
-  });
+  // 시트가 열린 일정 카드 강조
+  function markSelectedCard() {
+    const open = !$('#infoSheet').hidden;
+    document.querySelectorAll('#cardList .card').forEach(li => li.classList.toggle('sel', open && li.dataset.id === selectedId));
+  }
 
   // ---------- 장소 정보 시트 ----------
   function select(id) {
@@ -210,7 +190,7 @@
       const pin = el && el.querySelector('.pin');
       if (pin) pin.classList.toggle('sel', mid === id);
     });
-    document.querySelectorAll('#stopList .stop').forEach(li => li.classList.toggle('sel', li.dataset.id === id));
+    markSelectedCard();
     const m = markers[id];
     if (m && map) map.panTo(m.getLatLng(), { animate: true });
   }
@@ -260,7 +240,11 @@
       }
     }
     PQ.openSheet('#infoSheet');
+    markSelectedCard();
   }
+  PQ.openInfo = openInfo;
+  // 시트 닫히면 카드 강조 해제
+  new MutationObserver(markSelectedCard).observe($('#infoSheet'), { attributes: true, attributeFilter: ['hidden'] });
 
   function renderFares(r) {
     const f = getFare();
@@ -270,7 +254,7 @@
       return `<div class="fare-row"><span>${name}</span><b>${fmtVnd(e.low)} ~ ${fmtVnd(e.high)}${krw}</b></div>`;
     }).join('');
     $('#infoFares').innerHTML = `<h3>그랩 요금 <span class="badge">예상치</span></h3>${rows}
-      <p class="hint">거리 기반 계산이라 실제 요금과 달라요. 기준값은 지도 탭 오른쪽 위 ⚙︎에서 바꿀 수 있어요.${f.surge !== 1 ? ` (할증 ×${f.surge} 적용)` : ''}</p>`;
+      <p class="hint">거리 기반 계산이라 실제 요금과 달라요. 기준값은 오른쪽 위 ⋯ 메뉴의 ‘그랩 요금 기준 설정’에서 바꿀 수 있어요.${f.surge !== 1 ? ` (할증 ×${f.surge} 적용)` : ''}</p>`;
   }
 
   $('#btnInfoEdit').addEventListener('click', () => {
@@ -400,8 +384,8 @@
     if (!$('#infoSheet').hidden && !PQ.findItem(selectedId)) PQ.closeSheet('#infoSheet');
   });
   document.addEventListener('pq:tab', e => {
-    if (e.detail === 'map') {
-      PQ.render(); // 날짜 칩 위치 갱신 + 지도 그리기
+    if (e.detail === 'route') {
+      PQ.render(); // 탭이 다시 보일 때 지도 크기 재계산
       setTimeout(() => map && map.invalidateSize(), 50);
     }
   });

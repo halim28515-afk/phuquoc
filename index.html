@@ -39,22 +39,16 @@
           </span>
         </div>
         <div class="day-head" id="dayHead"></div>
+        <div class="map-wrap">
+          <div id="map" aria-label="일정 지도"></div>
+          <div class="map-notice" id="mapNotice" hidden>지도 배경을 불러오지 못했어요. 마커와 이동 순서는 그대로 볼 수 있어요.</div>
+          <div class="map-empty" id="mapEmpty" hidden>좌표가 있는 일정이 없어요. 일정을 눌러 장소를 검색해 보세요.</div>
+        </div>
         <ul class="card-list" id="cardList"></ul>
         <div class="empty" id="emptyState" hidden>
           <p>아직 일정이 없어요.</p>
           <p class="muted">오른쪽 아래 <b>+</b> 버튼으로 추가하세요.</p>
         </div>
-      </section>
-
-      <!-- 지도 -->
-      <section class="tab-panel" id="tab-map">
-        <nav class="day-chips" id="mapChips"></nav>
-        <div class="map-wrap">
-          <div id="map" aria-label="일정 지도"></div>
-          <div class="map-notice" id="mapNotice" hidden>지도 배경을 불러오지 못했어요. 마커와 이동 순서는 그대로 볼 수 있어요.</div>
-          <div class="map-empty" id="mapEmpty" hidden>좌표가 있는 일정이 없어요.<br>동선 탭에서 장소를 검색해 좌표를 넣어주세요.</div>
-        </div>
-        <ul class="stop-list" id="stopList"></ul>
         <p class="map-credit">거리·시간: OSRM · 장소 검색: Nominatim · 지도 © OpenStreetMap</p>
       </section>
 
@@ -159,7 +153,6 @@
 
   <nav class="tabbar">
     <button class="tab active" data-tab="route"><span class="ti">📍</span><span>동선</span></button>
-    <button class="tab" data-tab="map"><span class="ti">🗺️</span><span>지도</span></button>
     <button class="tab" data-tab="fx"><span class="ti">💱</span><span>환전</span></button>
     <button class="tab" data-tab="settle"><span class="ti">🧾</span><span>정산</span></button>
   </nav>
@@ -170,6 +163,7 @@
       <div class="sheet-grip"></div>
       <h2>데이터</h2>
       <button class="sheet-item" id="btnSortTime">⏱️ 이 날 일정 시간순 정렬</button>
+      <button class="sheet-item" id="btnFare">🚕 그랩 요금 기준 설정</button>
       <button class="sheet-item" id="btnExport">⬇️ JSON 내보내기</button>
       <button class="sheet-item" id="btnImport">⬆️ JSON 가져오기</button>
       <button class="sheet-item danger" id="btnClearDay">🗑️ 이 날 일정 모두 삭제</button>
