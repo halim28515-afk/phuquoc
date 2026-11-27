@@ -98,15 +98,25 @@
     box.hidden = !html;
   }
 
+  // 편명 칸은 장소에 공항이 들어갔을 때(또는 이미 편명이 있을 때)만 보임
+  const AIRPORT = /공항|airport|터미널|terminal/i;
+  function syncVisible() {
+    const show = AIRPORT.test($('#fPlace').value) || !!normNo($('#fFlight').value);
+    $('#flightWrap').hidden = !show;
+  }
+  $('#fPlace').addEventListener('input', syncVisible);
+
   // 편집 시트 열 때
   function load(item) {
     current = item && item.flight ? JSON.parse(JSON.stringify(item.flight)) : null;
     $('#fFlight').value = current ? current.no : '';
     renderBox('');
+    syncVisible();
   }
 
   // 저장할 때
   function read() {
+    if ($('#flightWrap').hidden) return undefined;
     const no = normNo($('#fFlight').value);
     if (!no) return undefined;
     if (current && current.no === no) return current;

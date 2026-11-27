@@ -238,7 +238,7 @@
     const list = expenses().filter(e => e.itemId === itemId);
     if (!list.length) return '';
     const sum = list.reduce((s, e) => s + toKrw(e), 0);
-    return `<span class="spent">💸 ${won(sum)}${list.length > 1 ? ` · ${list.length}건` : ''}</span>`;
+    return `<span class="spent">${PQ.icoDollar('ico-inline')} ${won(sum)}${list.length > 1 ? ` · ${list.length}건` : ''}</span>`;
   };
 
   // ---------- 참여자 ----------

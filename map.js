@@ -235,7 +235,7 @@
     select(id);
     const token = ++infoToken;
 
-    $('#infoTitle').textContent = `${i + 1}. ${it.place}`;
+    $('#infoTitle').textContent = it.place;
     $('#infoSub').textContent = [it.time, it.flight && PQ.flight ? '✈️ ' + it.flight.no : ''].filter(Boolean).join(' · ') || ' ';
     $('#infoMemo').textContent = it.memo || '';
     $('#infoMemo').hidden = !it.memo;
