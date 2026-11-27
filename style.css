@@ -151,11 +151,12 @@ main { padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 90px); }
 }
 
 .day-head {
-  margin: 8px 16px 4px; padding: 10px 12px;
-  background: var(--primary-soft); border-radius: 12px; font-size: 13px;
-  display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  margin: 8px 16px 4px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; font-size: 13px;
 }
-.day-head b { color: var(--primary); }
+.dh-box { min-width: 0; padding: 8px 12px; background: var(--primary-soft); border-radius: 12px; display: flex; flex-direction: column; gap: 2px; }
+.dh-box .dh-l { font-size: 11px; color: var(--muted); }
+.dh-box b { color: var(--primary); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dh-box.none b { color: var(--muted); font-weight: 500; }
 
 /* Cards */
 .card-list { list-style: none; margin: 8px 0 0; padding: 0 16px; }
@@ -516,7 +517,7 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 
 /* ---------- 동선+지도 통합 · 촘촘한 일정 카드 ---------- */
 .tabbar { grid-template-columns: repeat(3, 1fr); }
-.day-head { margin: 8px 16px 0; padding: 7px 12px; font-size: 12px; }
+.day-head { margin: 8px 16px 0; }
 #tab-route .map-wrap { margin-top: 8px; }
 #map { height: min(30vh, 230px); min-height: 180px; }
 

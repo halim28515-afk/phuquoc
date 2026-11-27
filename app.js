@@ -112,17 +112,38 @@
     });
   }
 
+  // ---------- 날짜별 숙박·항공 (일정에서 자동으로) ----------
+  const CHECKOUT = /체크\s*아웃|check[\s-]*out/i;
+  const STAY = /체크\s*인|check[\s-]*in|호텔|리조트|숙소|게스트\s*하우스|호스텔|빌라|펜션|에어비앤비|hotel|resort|hostel|villa|airbnb|inn\b/i;
+  const stayName = place => place.replace(/체크\s*(인|아웃)|check[\s-]*(in|out)/ig, '').replace(/\s{2,}/g, ' ').trim() || place;
+
+  // 여행 첫날부터 순서대로: 체크인(숙소) 일정이 나오면 그 숙소, 체크아웃이 나오면 비움
+  function staysByDate() {
+    const out = {};
+    let cur = null;
+    allDates().forEach(date => {
+      (state.days[date] || []).forEach(it => {
+        if (CHECKOUT.test(it.place)) cur = null;
+        else if (STAY.test(it.place)) cur = stayName(it.place);
+      });
+      out[date] = cur;
+    });
+    return out;
+  }
+  function flightText(f) {
+    const route = f.dep || f.arr ? ` ${[f.dep && f.dep.iata, f.arr && f.arr.iata].filter(Boolean).join('→')}` : '';
+    return `${f.no}${f.dep && f.dep.time ? ' ' + f.dep.time : ''}${route}`;
+  }
+
   function renderHead() {
-    const { idx, stay } = dayInfo(currentDay);
     const el = $('#dayHead');
-    let html = '';
-    if (idx < 0) html = '<span>여행 기간 밖 날짜</span>';
-    else if (stay) {
-      html = (stay.note ? `<span>${esc(stay.note)}</span>` : '') +
-        (stay.stay ? `<span>🏨 숙박 <b>${esc(stay.stay)}</b></span>` : '<span>✈️ 체크아웃 · 공항</span>');
-    }
-    el.innerHTML = html;
-    el.hidden = !html;
+    const stay = staysByDate()[currentDay] || '';
+    const flights = (state.days[currentDay] || []).filter(it => it.flight).map(it => flightText(it.flight));
+    const fl = flights.length ? flights[0] + (flights.length > 1 ? ` 외 ${flights.length - 1}` : '') : '';
+    if (!stay && !fl) { el.innerHTML = ''; el.hidden = true; return; }
+    const box = (label, val) => `<div class="dh-box${val ? '' : ' none'}"><span class="dh-l">${label}</span><b>${val ? esc(val) : '없음'}</b></div>`;
+    el.innerHTML = box('숙박', stay) + box('항공', fl);
+    el.hidden = false;
   }
 
   const ICO_DOLLAR = '<svg class="ico-dollar" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14.8 9.2c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2.1 0 1.4 1.2 1.8 2.8 2.2 1.7.4 2.9.9 2.9 2.3 0 1.3-1.3 2.2-2.9 2.2-1.4 0-2.6-.7-3-1.8M12 6v1.6M12 16.4V18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
