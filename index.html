@@ -61,7 +61,7 @@
           <button type="button" class="btn ghost small" id="btnSortTime">시간순 정렬</button>
           <button type="button" class="text-danger" id="btnClearDay">모두 삭제</button>
         </div>
-        <p class="map-credit">거리·시간 OSRM · 장소 검색 Photon·Nominatim · 지도 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
+        <p class="map-credit">거리·시간 OSRM · 장소 검색 Google·Photon·Nominatim · 지도 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
       </section>
 
       <!-- 환전 -->
@@ -382,6 +382,7 @@
       <h2>이 여행</h2>
       <button class="sheet-item" id="btnFileImport">일정 파일 가져오기 (엑셀·CSV)</button>
       <button class="sheet-item" id="btnFare">그랩 요금 기준 설정</button>
+      <button class="sheet-item" id="btnPlaceKey">장소 검색 설정 (구글)</button>
       <button class="sheet-item" id="btnFlightKey">항공편 자동 조회 설정</button>
       <button class="sheet-item" id="btnExport">이 여행 JSON 내보내기 (다른 폰과 공유)</button>
       <button class="sheet-item cancel" data-close>닫기</button>
@@ -505,6 +506,29 @@
       </label>
       <div class="sheet-buttons">
         <button type="button" class="btn ghost" id="btnFareReset">기본값</button>
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 구글 장소 검색 설정 -->
+  <div class="sheet-backdrop" id="placeKeySheet" hidden>
+    <form class="sheet" id="placeKeyForm" autocomplete="off">
+      <div class="sheet-grip"></div>
+      <h2>장소 검색 설정 (구글)</h2>
+      <p class="hint">구글 API 키를 넣으면 장소명을 한국어로 입력하는 동안 구글 추천 장소가 떠요. 키가 없으면 무료 지도 검색을 써요.</p>
+      <ol class="key-steps">
+        <li>구글 클라우드 콘솔에서 <b>Places API (New)</b>를 사용 설정해요.</li>
+        <li><b>사용자 인증 정보</b>에서 만든 API 키를 복사해서 아래에 붙여넣어요.</li>
+        <li>키 설정에서 웹사이트 제한(이 앱 주소)을 걸어 두면 남이 못 써요.</li>
+      </ol>
+      <label>API 키
+        <input type="text" id="fPlaceKey" spellcheck="false" placeholder="붙여넣기">
+      </label>
+      <p class="hint">키는 이 폰에만 저장되고, 여행 내보내기·백업 파일에는 들어가지 않아요.</p>
+      <div class="sheet-buttons">
+        <button type="button" class="btn ghost" id="btnPlaceKeyDel">키 지우기</button>
         <button type="button" class="btn ghost" data-close>취소</button>
         <button type="submit" class="btn primary">저장</button>
       </div>

@@ -762,3 +762,5 @@ form.sheet input[type="date"], .new-form input[type="date"] { background-image: 
 input[type="time"]::-webkit-calendar-picker-indicator, input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0; width: 22px; height: 22px; margin: 0; padding: 0; cursor: pointer;
 }
+.search-results .sr-by { font-size: 10px; text-align: right; padding: 4px 12px 6px; }
+.search-results li.loading { opacity: .5; }

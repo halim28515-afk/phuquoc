@@ -2,7 +2,7 @@
 'use strict';
 
 // 앱 파일을 바꿔 배포할 때 이 버전을 올리면 새 캐시로 교체돼요
-const VERSION = 'v5';
+const VERSION = 'v6';
 const SHELL = `shell-${VERSION}`;   // 앱 파일
 const LIBS = 'libs-v1';             // CDN 라이브러리 (주소에 버전이 있어 바뀌지 않음)
 const TILES = 'tiles-v1';           // 지도 타일 (본 곳만)

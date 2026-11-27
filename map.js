@@ -494,30 +494,116 @@
     } catch (e) { /* 오프라인이면 다음에 */ }
   }
 
+  // ---------- 구글 장소 검색 (Places API, 키가 있을 때) ----------
+  const GKEY_STORE = 'gplaces-key'; // 이 기기에만 저장
+  const getGKey = () => { try { return localStorage.getItem(GKEY_STORE) || ''; } catch (e) { return ''; } };
+  const setGKey = v => { try { v ? localStorage.setItem(GKEY_STORE, v) : localStorage.removeItem(GKEY_STORE); } catch (e) { /* noop */ } };
+  const GAPI = 'https://places.googleapis.com/v1/';
+  let gSession = '';
+  const newSession = () => (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+  const gFail = code => { const e = new Error(code); e.code = code; return e; };
+
+  async function gFetch(url, opts) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    let r;
+    try { r = await fetch(url, Object.assign({ signal: ctrl.signal }, opts)); }
+    catch (e) { throw gFail('net'); }
+    finally { clearTimeout(timer); }
+    if (r.status === 400 || r.status === 401 || r.status === 403) throw gFail('auth');
+    if (r.status === 429) throw gFail('limit');
+    if (!r.ok) throw gFail('http');
+    return r.json();
+  }
+
+  // 입력한 글자로 추천 장소 (한국어 그대로)
+  async function gAutocomplete(input, near) {
+    if (!gSession) gSession = newSession();
+    const body = { input, languageCode: 'ko', sessionToken: gSession };
+    if (near) body.locationBias = { circle: { center: { latitude: near[0], longitude: near[1] }, radius: 50000 } };
+    const j = await gFetch(GAPI + 'places:autocomplete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': getGKey() },
+      body: JSON.stringify(body),
+    });
+    return (j.suggestions || []).map(s => s.placePrediction).filter(Boolean).map(p => {
+      const sf = p.structuredFormat || {};
+      return {
+        placeId: p.placeId,
+        name: (sf.mainText && sf.mainText.text) || (p.text && p.text.text) || '',
+        display_name: (sf.secondaryText && sf.secondaryText.text) || (p.text && p.text.text) || '',
+      };
+    });
+  }
+  // 고른 장소의 위치·주소
+  async function gDetails(placeId) {
+    const q = new URLSearchParams({ languageCode: 'ko' });
+    if (gSession) q.set('sessionToken', gSession);
+    const j = await gFetch(`${GAPI}places/${encodeURIComponent(placeId)}?${q}`, {
+      headers: { 'X-Goog-Api-Key': getGKey(), 'X-Goog-FieldMask': 'location,formattedAddress,displayName' },
+    });
+    gSession = ''; // 한 번 고르면 검색 묶음 끝
+    const loc = j.location || {};
+    return {
+      lat: loc.latitude, lon: loc.longitude,
+      display_name: j.formattedAddress || '',
+      name: (j.displayName && j.displayName.text) || '',
+    };
+  }
+  const gMsg = code => ({
+    auth: '구글 API 키를 확인하세요. 구글 클라우드에서 Places API (New)가 켜져 있어야 해요.',
+    limit: '구글 검색 사용량 한도를 넘었어요. 잠시 뒤 다시 해 주세요.',
+    net: '구글 검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하세요.',
+  }[code] || '구글 검색 중 문제가 생겼어요.');
+
   // 검색 결과·추천 목록을 보여주고, 고르면 위치와 주소를 넣음
-  function showResults(res, title) {
+  function showResults(res, title, google) {
     const ul = $('#searchResults');
     ul.hidden = false;
     ul.innerHTML = (title ? `<li class="sr-msg sr-title">${esc(title)}</li>` : '') + res.map((r, i) => {
       const name = r.name || String(r.display_name).split(',')[0];
       return `<li data-i="${i}"><div class="sr-name">${esc(name)}</div><div class="sr-addr">${esc(r.display_name)}</div></li>`;
-    }).join('');
-    ul.onclick = e => {
+    }).join('') + (google ? '<li class="sr-msg sr-by">Google 제공</li>' : '');
+    ul.onclick = async e => {
       const li = e.target.closest('li[data-i]');
       if (!li) return;
-      const r = res[Number(li.dataset.i)];
+      let r = res[Number(li.dataset.i)];
+      suggestRun++; // 진행 중인 추천은 무시
+      if (r.placeId && typeof r.lat !== 'number') {
+        li.classList.add('loading');
+        try {
+          const d = await gDetails(r.placeId);
+          r = Object.assign({}, r, d, { name: d.name || r.name, display_name: d.display_name || r.display_name });
+        } catch (err) {
+          li.classList.remove('loading');
+          PQ.toast(gMsg(err.code));
+          return;
+        }
+      }
+      if (typeof r.lat !== 'number' || typeof r.lon !== 'number') { PQ.toast('이 장소의 위치를 받지 못했어요'); return; }
       $('#fLat').value = Number(r.lat).toFixed(6);
       $('#fLng').value = Number(r.lon).toFixed(6);
       PQ.setPickedAddr(String(r.display_name || ''));
       // 장소명이 비어 있으면 고른 장소 이름으로
       if (!$('#fPlace').value.trim()) $('#fPlace').value = r.name || '';
       ul.hidden = true;
-      suggestRun++; // 진행 중인 추천은 무시
       PQ.toast('주소를 넣었어요');
     };
   }
 
-  // 입력하는 동안 추천 장소 (0.5초 멈추면 검색)
+  // 추천 장소 찾기: 구글 키가 있으면 구글(한국어 그대로), 없으면 Photon(영어로 바꿔서)
+  async function suggest(q) {
+    if (getGKey()) {
+      const res = await gAutocomplete(q, PQ.state.center);
+      return { res, title: '추천 장소', google: true };
+    }
+    const en = koToEn(q);
+    if (!en) return { res: [] };
+    const res = uniqRes(await photon(en, PQ.state.center));
+    return { res, title: en !== q ? `추천 장소 · "${en}"로 찾았어요` : '추천 장소' };
+  }
+
+  // 입력하는 동안 추천 장소
   let suggestTimer = null, suggestRun = 0;
   $('#fPlace').addEventListener('input', () => {
     clearTimeout(suggestTimer);
@@ -525,14 +611,12 @@
     const run = ++suggestRun;
     if (q.length < 2) { $('#searchResults').hidden = true; return; }
     suggestTimer = setTimeout(async () => {
-      const en = koToEn(q);
-      if (!en) return;
-      let res = [];
-      try { res = await photon(en, PQ.state.center); } catch (e) { return; } // 오프라인이면 조용히
+      let out;
+      try { out = await suggest(q); } catch (e) { return; } // 오프라인이면 조용히
       if (run !== suggestRun || searchBusy) return;
-      if (!res.length) { $('#searchResults').hidden = true; return; }
-      showResults(uniqRes(res), en !== q ? `추천 장소 · "${en}"로 찾았어요` : '추천 장소');
-    }, 500);
+      if (!out.res.length) { $('#searchResults').hidden = true; return; }
+      showResults(out.res, out.title, out.google);
+    }, getGKey() ? 300 : 500);
   });
 
   $('#btnSearch').addEventListener('click', async () => {
@@ -548,9 +632,18 @@
     ul.onclick = null;
     ul.innerHTML = '<li class="sr-msg">검색 중…</li>';
     try {
+      if (getGKey()) {
+        try {
+          const res = await gAutocomplete(q, PQ.state.center);
+          if (res.length) { showResults(res, '', true); return; }
+        } catch (err) {
+          ul.innerHTML = `<li class="sr-msg">${esc(gMsg(err.code))}</li>`;
+          return;
+        }
+      }
       const res = await searchPlace(q, PQ.state);
       if (!res.length) {
-        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 장소 이름을 영어로 쓰거나 주소를 더 자세히 써 보세요.</li>';
+        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 장소 이름을 바꾸거나 주소를 더 자세히 써 보세요.</li>';
         return;
       }
       showResults(res);
@@ -560,6 +653,27 @@
       searchBusy = false;
       $('#btnSearch').disabled = false;
     }
+  });
+
+  // ---------- 구글 키 설정 ----------
+  $('#btnPlaceKey').addEventListener('click', () => {
+    PQ.closeSheet('#menuSheet');
+    $('#fPlaceKey').value = getGKey();
+    PQ.openSheet('#placeKeySheet');
+  });
+  $('#placeKeyForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('#fPlaceKey').value.trim();
+    setGKey(v);
+    gSession = '';
+    PQ.closeSheet('#placeKeySheet');
+    PQ.toast(v ? '구글 API 키를 저장했어요' : '구글 API 키를 지웠어요');
+  });
+  $('#btnPlaceKeyDel').addEventListener('click', () => {
+    setGKey('');
+    $('#fPlaceKey').value = '';
+    PQ.closeSheet('#placeKeySheet');
+    PQ.toast('구글 API 키를 지웠어요');
   });
 
   // ---------- 연결 ----------
