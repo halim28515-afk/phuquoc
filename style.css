@@ -25,6 +25,7 @@
   --tabbar-h: 54px; /* iOS 탭바 49pt + 여유 */
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --ico-chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236a7285' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); --ico-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236a7285' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); --ico-cal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236a7285' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15' rx='2'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E");
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -35,6 +36,7 @@
     --sample-bg: #1e2638; --sample-fg: #bac6e4; --toast-bg: rgba(230,233,240,.94);
     --desk-bg: #07090d; --frame: #000000; --shadow: 0 1px 3px rgba(0,0,0,.5);
     color-scheme: dark;
+    --ico-chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23949bad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); --ico-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23949bad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); --ico-cal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23949bad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15' rx='2'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E");
   }
 }
 :root[data-theme="dark"] {
@@ -45,6 +47,7 @@
   --sample-bg: #1e2638; --sample-fg: #bac6e4; --toast-bg: rgba(230,233,240,.94);
   --desk-bg: #07090d; --frame: #000000; --shadow: 0 1px 3px rgba(0,0,0,.5);
   color-scheme: dark;
+  --ico-chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23949bad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); --ico-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23949bad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); --ico-cal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23949bad' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15' rx='2'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E");
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; scrollbar-width: none; }
@@ -320,7 +323,8 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .stop .st-time { flex: 0 0 44px; font-size: 13px; color: var(--primary); font-weight: 700; font-variant-numeric: tabular-nums; }
 .stop .st-place { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stop .st-leg { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.list-foot { display: flex; justify-content: center; margin: 12px 16px 0; }
+.list-foot { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 12px 16px 0; }
+.text-danger { border: 0; background: none; padding: 4px 8px; color: var(--danger); font-size: 13px; font-weight: 600; }
 .map-credit { margin: 20px 16px 0; font-size: 11px; color: var(--muted); text-align: center; }
 .map-credit a { color: inherit; }
 
@@ -743,3 +747,16 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .key-steps { margin: 0 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.6; }
 .ico-dollar.ico-inline { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; color: var(--primary); }
 .search-results .sr-title { font-size: 11px; font-weight: 700; color: var(--muted); padding: 8px 12px 4px; }
+
+/* 드롭다운·시간·날짜 칸: 오른쪽 아이콘 위치를 똑같이 (기본 화살표·시계 대신 직접 그림) */
+form.sheet select, .new-form select, form.sheet input[type="time"], .new-form input[type="time"],
+form.sheet input[type="date"], .new-form input[type="date"] {
+  -webkit-appearance: none; appearance: none;
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 18px 18px;
+}
+form.sheet select, .new-form select { background-image: var(--ico-chev); padding-right: 40px; text-overflow: ellipsis; }
+form.sheet input[type="time"], .new-form input[type="time"] { background-image: var(--ico-clock); padding-right: 12px; }
+form.sheet input[type="date"], .new-form input[type="date"] { background-image: var(--ico-cal); padding-right: 12px; }
+input[type="time"]::-webkit-calendar-picker-indicator, input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0; width: 22px; height: 22px; margin: 0; padding: 0; cursor: pointer;
+}

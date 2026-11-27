@@ -143,7 +143,8 @@
         </div>
       </li>`).join('');
     $('#emptyState').hidden = list.length > 0;
-    $('#listFoot').hidden = list.length < 2;
+    $('#listFoot').hidden = list.length < 1;
+    $('#btnSortTime').hidden = list.length < 2;
     $('#sampleBanner').hidden = !state.sample;
   }
 
@@ -213,7 +214,7 @@
     if (selected && !dates.includes(selected)) dates.push(selected);
     return dates.map(date => {
       const { m, d, wd, idx } = dayInfo(date);
-      return `<option value="${date}"${date === selected ? ' selected' : ''}>${idx >= 0 ? 'Day ' + (idx + 1) + ' · ' : ''}${m}/${d} (${wd})</option>`;
+      return `<option value="${date}"${date === selected ? ' selected' : ''}>${idx >= 0 ? 'D' + (idx + 1) + ' · ' : ''}${m}/${d}(${wd})</option>`;
     }).join('');
   }
 
