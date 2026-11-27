@@ -140,7 +140,7 @@
   const dayList = () => PQ.state.days[PQ.currentDay] || [];
 
   function cssVar(name) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#0e7c86';
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#4f46e5';
   }
 
   function ensureMap() {

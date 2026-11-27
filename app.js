@@ -136,7 +136,7 @@
           ${window.PQ && PQ.linkedSpent ? PQ.linkedSpent(it.id) : ''}
         </div>
         <div class="card-side">
-          <button type="button" class="card-exp" data-exp="${esc(it.id)}" aria-label="이 일정에 지출 추가">💸</button>
+          <button type="button" class="card-exp" data-exp="${esc(it.id)}" aria-label="이 일정에 지출 추가"><svg class="ico-dollar" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14.8 9.2c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2.1 0 1.4 1.2 1.8 2.8 2.2 1.7.4 2.9.9 2.9 2.3 0 1.3-1.3 2.2-2.9 2.2-1.4 0-2.6-.7-3-1.8M12 6v1.6M12 16.4V18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
           <div class="handle" aria-label="순서 변경">≡</div>
         </div>
       </li>`).join('');
