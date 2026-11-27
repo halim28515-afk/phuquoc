@@ -2,7 +2,7 @@
 'use strict';
 
 // 앱 파일을 바꿔 배포할 때 이 버전을 올리면 새 캐시로 교체돼요
-const VERSION = 'v4';
+const VERSION = 'v2';
 const SHELL = `shell-${VERSION}`;   // 앱 파일
 const LIBS = 'libs-v1';             // CDN 라이브러리 (주소에 버전이 있어 바뀌지 않음)
 const TILES = 'tiles-v1';           // 지도 타일 (본 곳만)
@@ -10,7 +10,7 @@ const MAX_TILES = 400;
 
 const SHELL_FILES = [
   './', './index.html', './style.css', './manifest.webmanifest',
-  './trips.js', './app.js', './map.js', './fx.js', './settle.js', './import.js', './flight.js', './trips-ui.js', './pwa.js',
+  './trips.js', './app.js', './map.js', './fx.js', './settle.js', './import.js', './trips-ui.js', './pwa.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png',
 ];
 const LIB_FILES = [

@@ -125,7 +125,6 @@
     el.hidden = !html;
   }
 
-  const ICO_DOLLAR = '<svg class="ico-dollar" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14.8 9.2c-.4-1-1.5-1.6-2.8-1.6-1.6 0-2.8.8-2.8 2.1 0 1.4 1.2 1.8 2.8 2.2 1.7.4 2.9.9 2.9 2.3 0 1.3-1.3 2.2-2.9 2.2-1.4 0-2.6-.7-3-1.8M12 6v1.6M12 16.4V18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
   function renderCards() {
     const list = state.days[currentDay] || [];
     const ul = $('#cardList');
@@ -133,12 +132,11 @@
         <div class="time${it.time ? '' : ' none'}">${it.time || '--:--'}</div>
         <div class="body">
           <div class="place">${esc(it.place)}</div>
-          ${it.flight && PQ.flight ? PQ.flight.cardLine(it.flight) : ''}
           ${it.memo ? `<div class="memo">${esc(it.memo)}</div>` : ''}
           ${window.PQ && PQ.linkedSpent ? PQ.linkedSpent(it.id) : ''}
         </div>
         <div class="card-side">
-          <button type="button" class="card-exp" data-exp="${esc(it.id)}" aria-label="이 일정에 지출 추가">${ICO_DOLLAR}</button>
+          <button type="button" class="card-exp" data-exp="${esc(it.id)}" aria-label="이 일정에 지출 추가">💸</button>
           <div class="handle" aria-label="순서 변경">≡</div>
         </div>
       </li>`).join('');
@@ -227,9 +225,6 @@
     $('#fMemo').value = item ? item.memo : '';
     $('#fLat').value = item && item.lat !== null ? item.lat : '';
     $('#fLng').value = item && item.lng !== null ? item.lng : '';
-    setPickedAddr(item ? item.addr || '' : '');
-    $('#coordMore').open = false;
-    if (PQ.flight) PQ.flight.load(item);
     const sr = $('#searchResults');
     if (sr) { sr.innerHTML = ''; sr.hidden = true; }
     openSheet('#editSheet');
@@ -244,18 +239,6 @@
     }
     return null;
   }
-
-  // 주소 검색으로 고른 주소 (좌표만 있으면 그렇게 표시)
-  let pickedAddr = '';
-  function setPickedAddr(addr) {
-    pickedAddr = addr;
-    const el = $('#fAddrPicked');
-    const hasCoord = $('#fLat').value.trim() && $('#fLng').value.trim();
-    el.textContent = addr ? '📍 ' + addr : hasCoord ? '📍 위치 있음 (좌표로 저장됨)' : '';
-    el.hidden = !el.textContent;
-  }
-  // 좌표를 손으로 바꾸면 검색한 주소와 달라지므로 주소는 지움
-  ['#fLat', '#fLng'].forEach(s => $(s).addEventListener('input', () => setPickedAddr('')));
 
   // "10.2167, 103.96" 형태 붙여넣기 → 위도/경도 분리
   function splitCoordPaste(e) {
@@ -298,25 +281,18 @@
 
     const date = $('#fDate').value;
     const data = { time: $('#fTime').value, place, memo: $('#fMemo').value.trim(), lat, lng };
-    data.addr = lat !== null && pickedAddr ? pickedAddr.slice(0, 200) : undefined;
-    data.flight = PQ.flight ? PQ.flight.read() : undefined;
 
     if (editingId) {
       const found = findItem(editingId);
       if (found) {
         Object.assign(found.item, data);
-        if (!data.addr) delete found.item.addr;
-        if (!data.flight) delete found.item.flight;
         if (found.date !== date) {
           state.days[found.date].splice(found.i, 1);
           (state.days[date] = state.days[date] || []).push(found.item);
         }
       }
     } else {
-      const fresh = Object.assign({ id: uid() }, data);
-      if (!fresh.addr) delete fresh.addr;
-      if (!fresh.flight) delete fresh.flight;
-      (state.days[date] = state.days[date] || []).push(fresh);
+      (state.days[date] = state.days[date] || []).push(Object.assign({ id: uid() }, data));
     }
     save();
     currentDay = date;
@@ -508,9 +484,7 @@
     get currentTab() { return currentTab; },
     tripDates, allDates, dateOptions, esc, dayInfo, toast, ask, save, render, findItem,
     switchTrip, clearTrip, selectTab, showExport, showImport, saveFile,
-    icoDollar: (cls = '') => ICO_DOLLAR.replace('class="ico-dollar"', `class="ico-dollar ${cls}"`),
     openEditor: item => openEditor(item),
-    setPickedAddr: addr => setPickedAddr(addr),
     openSheet, closeSheet,
     onRender: fn => renderHooks.push(fn),
   };
