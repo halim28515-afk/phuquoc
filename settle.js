@@ -146,7 +146,7 @@
       $('#stResult').hidden = true;
       empty.innerHTML = !ps.length
         ? '참여자를 먼저 추가하면<br>지출을 기록하고 정산할 수 있어요.<br><button type="button" class="btn primary small" data-act="people">참여자 추가</button>'
-        : '아직 지출이 없어요.<br>오른쪽 아래 <b>+</b>나 동선 탭 일정 카드의 💸로 추가하세요.<br><button type="button" class="btn primary small" data-act="add">지출 추가</button>';
+        : '아직 지출이 없어요.<br>오른쪽 아래 <b>+</b>나 동선 탭 일정 카드의 $ 버튼으로 추가하세요.<br><button type="button" class="btn primary small" data-act="add">지출 추가</button>';
       return;
     }
     empty.hidden = true;
@@ -238,7 +238,7 @@
     const list = expenses().filter(e => e.itemId === itemId);
     if (!list.length) return '';
     const sum = list.reduce((s, e) => s + toKrw(e), 0);
-    return `<span class="spent">💸 ${won(sum)}${list.length > 1 ? ` · ${list.length}건` : ''}</span>`;
+    return `<span class="spent">${PQ.icoDollar('ico-inline')} ${won(sum)}${list.length > 1 ? ` · ${list.length}건` : ''}</span>`;
   };
 
   // ---------- 참여자 ----------

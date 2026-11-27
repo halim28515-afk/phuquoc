@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0e7c86">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="여행 플래너">
   <meta name="description" content="여행마다 동선·지도·환전·정산을 한곳에서">
   <title>여행 플래너</title>
@@ -42,11 +42,11 @@
           <div class="map-wrap">
             <div id="map" aria-label="일정 지도"></div>
             <div class="map-notice" id="mapNotice" hidden>지도 배경을 불러오지 못했어요. 마커와 이동 순서는 그대로 볼 수 있어요.</div>
-            <div class="map-empty" id="mapEmpty" hidden>좌표가 있는 일정이 없어요. 일정을 눌러 장소를 검색해 보세요.</div>
+            <div class="map-empty" id="mapEmpty" hidden>위치가 있는 일정이 없어요. 일정을 눌러 주소를 검색해 보세요.</div>
           </div>
         </div>
         <div class="sample-banner" id="sampleBanner" hidden>
-          <span>예시 일정이에요. 좌표는 대략값이에요.</span>
+          <span>예시 일정이에요. 위치는 대략값이에요.</span>
           <span class="sb-actions">
             <button type="button" id="btnSampleClear">예시 지우기</button>
             <button type="button" id="btnSampleKeep">계속 쓰기</button>
@@ -379,6 +379,7 @@
       <button class="sheet-item" id="btnFileImport">📄 일정 파일 가져오기 (엑셀·CSV)</button>
       <button class="sheet-item" id="btnSortTime">⏱️ 이 날 일정 시간순 정렬</button>
       <button class="sheet-item" id="btnFare">🚕 그랩 요금 기준 설정</button>
+      <button class="sheet-item" id="btnFlightKey">✈️ 항공편 자동 조회 설정</button>
       <button class="sheet-item" id="btnExport">⬇️ 이 여행 JSON 내보내기 (다른 폰과 공유)</button>
       <button class="sheet-item danger" id="btnClearDay">🗑️ 이 날 일정 모두 삭제</button>
       <button class="sheet-item cancel" data-close>닫기</button>
@@ -429,23 +430,35 @@
       </label>
       <label for="fPlace">장소명 <span class="req">*</span></label>
       <div class="search-row">
-        <input type="text" name="place" id="fPlace" required maxlength="80" placeholder="예) 즈엉동 야시장">
-        <button type="button" class="btn ghost" id="btnSearch">🔍 좌표 찾기</button>
+        <input type="text" name="place" id="fPlace" required maxlength="80" placeholder="장소명이나 주소">
+        <button type="button" class="btn ghost" id="btnSearch">🔍 주소 검색</button>
       </div>
       <ul class="search-results" id="searchResults" hidden></ul>
+      <p class="addr-picked" id="fAddrPicked" hidden></p>
+      <div id="flightWrap" hidden>
+        <label for="fFlight">항공편 <small class="opt">(선택)</small></label>
+        <div class="search-row">
+          <input type="text" id="fFlight" maxlength="8" placeholder="편명 예) VJ975" autocapitalize="characters" spellcheck="false">
+          <button type="button" class="btn ghost" id="btnFlight">✈️ 조회</button>
+        </div>
+        <div class="flight-box" id="flightBox" hidden></div>
+      </div>
       <label>메모
         <textarea name="memo" id="fMemo" rows="3" maxlength="500" placeholder="예약번호, 준비물 등"></textarea>
       </label>
-      <div class="row2">
-        <label>위도
-          <input type="text" name="lat" id="fLat" inputmode="decimal" placeholder="10.2167">
-        </label>
-        <label>경도
-          <input type="text" name="lng" id="fLng" inputmode="decimal" placeholder="103.9600">
-        </label>
-      </div>
-      <p class="hint">구글맵 좌표(“10.2167, 103.9600”)를 위도 칸에 붙여넣으면 자동으로 나눠 들어가요.</p>
-      <button type="button" class="btn ghost small" id="btnGeo">📡 현재 위치 넣기</button>
+      <details class="coord-more" id="coordMore">
+        <summary>좌표 직접 입력</summary>
+        <div class="row2">
+          <label>위도
+            <input type="text" name="lat" id="fLat" inputmode="decimal" placeholder="10.2167">
+          </label>
+          <label>경도
+            <input type="text" name="lng" id="fLng" inputmode="decimal" placeholder="103.9600">
+          </label>
+        </div>
+        <p class="hint">구글맵 좌표(“10.2167, 103.9600”)를 위도 칸에 붙여넣으면 자동으로 나눠 들어가요.</p>
+        <button type="button" class="btn ghost small" id="btnGeo">📡 현재 위치 넣기</button>
+      </details>
       <div class="sheet-buttons">
         <button type="button" class="btn danger" id="btnDelete" hidden>삭제</button>
         <button type="button" class="btn ghost" data-close>취소</button>
@@ -458,17 +471,20 @@
   <div class="sheet-backdrop light" id="infoSheet" hidden>
     <div class="sheet">
       <div class="sheet-grip"></div>
-      <h2 id="infoTitle"></h2>
+      <div class="info-head">
+        <h2 id="infoTitle"></h2>
+        <div class="info-head-btns">
+          <button type="button" class="btn ghost small" id="btnInfoEdit">수정</button>
+          <button type="button" class="icon-close" data-close aria-label="닫기">✕</button>
+        </div>
+      </div>
       <p class="info-sub" id="infoSub"></p>
+      <div class="info-memo" id="infoMemo" hidden></div>
       <div class="leg" id="infoLeg"></div>
       <div class="fares" id="infoFares"></div>
       <div class="info-actions">
         <a class="btn primary" id="btnGmaps" href="#" target="_blank" rel="noopener">구글맵 길찾기</a>
         <button type="button" class="btn grab" id="btnGrab">그랩 열기</button>
-      </div>
-      <div class="sheet-buttons">
-        <button type="button" class="btn ghost" id="btnInfoEdit">일정 수정</button>
-        <button type="button" class="btn ghost" data-close>닫기</button>
       </div>
     </div>
   </div>
@@ -485,6 +501,29 @@
       </label>
       <div class="sheet-buttons">
         <button type="button" class="btn ghost" id="btnFareReset">기본값</button>
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 항공편 자동 조회 설정 -->
+  <div class="sheet-backdrop" id="flightKeySheet" hidden>
+    <form class="sheet" id="flightKeyForm" autocomplete="off">
+      <div class="sheet-grip"></div>
+      <h2>항공편 자동 조회 설정</h2>
+      <p class="hint">편명을 넣고 조회하면 출발·도착 공항, 시각, 터미널을 채워요. AirLabs의 무료 API 키가 필요해요.</p>
+      <ol class="key-steps">
+        <li><b>airlabs.co</b>에 들어가 <b>Sign up</b>으로 무료 가입해요.</li>
+        <li>로그인하면 나오는 화면(Dashboard)에서 <b>API Key</b>를 찾아요.</li>
+        <li>그 키를 복사해서 아래에 붙여넣어요.</li>
+      </ol>
+      <label>API 키
+        <input type="text" id="fFlightKey" spellcheck="false" placeholder="붙여넣기">
+      </label>
+      <p class="hint">키는 이 폰에만 저장되고, 여행 내보내기·백업 파일에는 들어가지 않아요.</p>
+      <div class="sheet-buttons">
+        <button type="button" class="btn ghost" id="btnFlightKeyDel">키 지우기</button>
         <button type="button" class="btn ghost" data-close>취소</button>
         <button type="submit" class="btn primary">저장</button>
       </div>
@@ -568,6 +607,7 @@
 <script src="fx.js"></script>
 <script src="settle.js"></script>
 <script src="import.js"></script>
+<script src="flight.js"></script>
 <script src="trips-ui.js"></script>
 <script src="pwa.js"></script>
 </body>

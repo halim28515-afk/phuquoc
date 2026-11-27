@@ -49,7 +49,7 @@
           <h3>${esc(t.name)}</h3>
           <p class="tc-place">${esc(place)}${place ? ' · ' : ''}${cur.code}</p>
           <p class="tc-period">${period(t)}</p>
-          <div class="tc-stats"><span>📍 일정 ${itemCount(t)}개</span><span>💸 ${total ? PQ.fx.fmt(total) + '원' : '지출 없음'}</span></div>
+          <div class="tc-stats"><span>📍 일정 ${itemCount(t)}개</span><span>${PQ.icoDollar('ico-inline')} ${total ? PQ.fx.fmt(total) + '원' : '지출 없음'}</span></div>
         </article>`;
       }).join('');
     }).join('');
