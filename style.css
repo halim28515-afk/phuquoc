@@ -332,6 +332,7 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .info-actions .btn { text-align: center; text-decoration: none; display: block; }
 .info-actions .btn[hidden] { display: none; }
 .btn.grab { background: var(--primary); color: var(--on-primary); }
+.info-memo { margin: -4px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 .info-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
 .info-head h2 { flex: 1; min-width: 0; margin: 4px 0 0; word-break: break-word; }
 .info-head-btns { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }

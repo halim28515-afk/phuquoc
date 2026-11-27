@@ -236,8 +236,11 @@
     const token = ++infoToken;
 
     $('#infoTitle').textContent = `${i + 1}. ${it.place}`;
-    $('#infoSub').textContent = [it.time, it.memo].filter(Boolean).join(' · ') || ' ';
+    $('#infoSub').textContent = [it.time, it.flight && PQ.flight ? '✈️ ' + it.flight.no : ''].filter(Boolean).join(' · ') || ' ';
+    $('#infoMemo').textContent = it.memo || '';
+    $('#infoMemo').hidden = !it.memo;
     const leg = $('#infoLeg');
+    leg.hidden = false;
     const fares = $('#infoFares');
     const gmaps = $('#btnGmaps');
     const grab = $('#btnGrab');
@@ -256,7 +259,8 @@
       grab.onclick = () => openGrab(prev, it);
 
       if (!prev) {
-        leg.innerHTML = '<div class="route">이 날 첫 장소예요</div>이전 장소가 없어서 거리는 계산하지 않아요. 길찾기는 현재 위치에서 출발해요.';
+        leg.innerHTML = '';
+        leg.hidden = true;
         fares.innerHTML = '';
       } else {
         const pi = list.indexOf(prev) + 1;
