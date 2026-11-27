@@ -1,4 +1,4 @@
-/* 여행 플래너 – 항공편: 편명으로 출발·도착 정보 조회 (AeroDataBox / RapidAPI 키 필요) */
+/* 여행 플래너 – 항공편: 편명으로 출발·도착 정보 조회 (AirLabs API 키 필요) */
 (function () {
   'use strict';
   const PQ = window.PQ;
@@ -6,7 +6,7 @@
   const esc = PQ.esc;
 
   const KEY_STORE = 'flight-api-key'; // 이 기기에만 저장 (여행 데이터·백업에 안 들어감)
-  const HOST = 'aerodatabox.p.rapidapi.com';
+  const API = 'https://airlabs.co/api/v9/';
 
   const getKey = () => { try { return localStorage.getItem(KEY_STORE) || ''; } catch (e) { return ''; } };
   const setKey = v => { try { v ? localStorage.setItem(KEY_STORE, v) : localStorage.removeItem(KEY_STORE); } catch (e) { /* noop */ } };
@@ -16,53 +16,98 @@
 
   let current = null; // 편집 중인 일정의 항공편 정보
 
-  // ---------- 조회 ----------
-  // "2026-12-10 14:05+09:00" → { date, time }
-  function splitLocal(s) {
-    const m = String(s || '').match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/);
-    return m ? { date: m[1], time: m[2] } : { date: '', time: '' };
-  }
-  function endOf(e) {
-    e = e || {};
-    const ap = e.airport || {};
-    const t = e.revisedTime || e.scheduledTime || {};
-    const local = splitLocal(t.local || e.scheduledTimeLocal);
-    const loc = ap.location || {};
-    return {
-      iata: ap.iata || ap.icao || '',
-      city: ap.municipalityName || ap.shortName || ap.name || '',
-      date: local.date, time: local.time,
-      terminal: e.terminal ? String(e.terminal) : '',
-      lat: typeof loc.lat === 'number' ? loc.lat : null,
-      lng: typeof loc.lon === 'number' ? loc.lon : null,
-    };
-  }
+  // ---------- 조회 (AirLabs) ----------
+  const fail = code => { const err = new Error(code); err.code = code; return err; };
 
-  async function lookup(no, date) {
-    const key = getKey();
-    if (!key) { const err = new Error('nokey'); err.code = 'nokey'; throw err; }
-    const url = `https://${HOST}/flights/number/${encodeURIComponent(no)}/${date}?dateLocalRole=Departure&withAircraftImage=false&withLocation=false`;
+  async function call(path, params) {
+    const q = new URLSearchParams(Object.assign({ api_key: getKey() }, params));
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 12000);
     let r;
+    try { r = await fetch(`${API}${path}?${q}`, { signal: ctrl.signal }); }
+    catch (e) { throw fail('net'); }
+    finally { clearTimeout(timer); }
+    const body = await r.json().catch(() => null);
+    const err = body && body.error;
+    if (err) {
+      const c = String(err.code || '');
+      if (/limit/.test(c)) throw fail('limit');
+      if (/key|auth|permission|access/.test(c)) throw fail('auth');
+      throw fail('http');
+    }
+    if (r.status === 401 || r.status === 403) throw fail('auth');
+    if (r.status === 429) throw fail('limit');
+    if (!r.ok || !body) throw fail('http');
+    return body.response;
+  }
+
+  const toMin = hm => { const m = /^(\d{1,2}):(\d{2})/.exec(hm || ''); return m ? +m[1] * 60 + +m[2] : null; };
+  // 현지시각 - UTC (분), -12h~+14h로 맞춤
+  const offset = (local, utc) => {
+    const a = toMin(local), b = toMin(utc);
+    if (a === null || b === null) return null;
+    let d = a - b;
+    if (d < -720) d += 1440;
+    if (d > 840) d -= 1440;
+    return d;
+  };
+  const addDays = (iso, n) => {
+    const d = new Date(iso + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  const WD = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+  async function airport(iata) {
+    if (!iata) return null;
     try {
-      r = await fetch(url, { signal: ctrl.signal, headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': HOST } });
-    } catch (e) {
-      const err = new Error('net'); err.code = 'net'; throw err;
-    } finally { clearTimeout(timer); }
-    if (r.status === 204 || r.status === 404) return null;
-    if (r.status === 401 || r.status === 403) { const err = new Error('auth'); err.code = 'auth'; throw err; }
-    if (r.status === 429) { const err = new Error('limit'); err.code = 'limit'; throw err; }
-    if (!r.ok) { const err = new Error('HTTP ' + r.status); err.code = 'http'; throw err; }
-    const list = await r.json().catch(() => []);
-    const f = Array.isArray(list) ? list[0] : null;
-    if (!f) return null;
-    const dep = endOf(f.departure), arr = endOf(f.arrival);
+      const res = await call('airports', { iata_code: iata });
+      return Array.isArray(res) && res[0] ? res[0] : null;
+    } catch (e) { return null; } // 공항 이름·위치는 없어도 됨
+  }
+  async function airlineName(code) {
+    if (!code) return '';
+    try {
+      const res = await call('airlines', { iata_code: code });
+      return Array.isArray(res) && res[0] && res[0].name ? res[0].name : '';
+    } catch (e) { return ''; }
+  }
+
+  // 편명의 정기 운항 시간표(routes)에서 그 날짜 요일에 맞는 편을 고름
+  async function lookup(no, date) {
+    if (!getKey()) throw fail('nokey');
+    const list = await call('routes', { flight_iata: no });
+    if (!Array.isArray(list) || !list.length) return null;
+    const wd = WD[new Date(date + 'T00:00:00Z').getUTCDay()];
+    const hit = list.find(r => Array.isArray(r.days) && r.days.includes(wd));
+    const r = hit || list[0];
+    const [dep, arr, airline] = await Promise.all([airport(r.dep_iata), airport(r.arr_iata), airlineName(r.airline_iata)]);
+
+    // 도착 날짜: 출발 현지시각 + 비행시간 + 시차로 계산
+    let arrDate = date;
+    const depMin = toMin(r.dep_time), dur = Number(r.duration);
+    const oDep = offset(r.dep_time, r.dep_time_utc), oArr = offset(r.arr_time, r.arr_time_utc);
+    if (depMin !== null && dur > 0 && oDep !== null && oArr !== null) {
+      arrDate = addDays(date, Math.floor((depMin + dur + (oArr - oDep)) / 1440));
+    } else if (toMin(r.arr_time) !== null && depMin !== null && toMin(r.arr_time) < depMin) {
+      arrDate = addDays(date, 1);
+    }
+    const term = v => Array.isArray(v) ? v.filter(Boolean).join(', ') : (v ? String(v) : '');
+    const end = (ap, iata, time, d, t) => ({
+      iata: iata || '',
+      city: (ap && (ap.city || ap.name)) || '',
+      date: d, time: /^\d{2}:\d{2}/.test(time || '') ? time.slice(0, 5) : '',
+      terminal: term(t),
+      lat: ap && typeof ap.lat === 'number' ? ap.lat : null,
+      lng: ap && typeof ap.lng === 'number' ? ap.lng : null,
+    });
     return {
       no,
-      airline: (f.airline && f.airline.name) || '',
-      status: f.status || '',
-      dep, arr,
+      airline,
+      status: '',
+      offDay: !hit, // 그 요일엔 정기편이 없음
+      dep: end(dep, r.dep_iata, r.dep_time, date, r.dep_terminals),
+      arr: end(arr, r.arr_iata, r.arr_time, arrDate, r.arr_terminals),
     };
   }
 
@@ -156,9 +201,9 @@
       if (f.dep.lat !== null && f.dep.lng !== null) {
         $('#fLat').value = f.dep.lat.toFixed(6);
         $('#fLng').value = f.dep.lng.toFixed(6);
-        PQ.setPickedAddr(`${f.dep.city} ${f.dep.iata} 공항`.trim());
+        PQ.setPickedAddr(`${f.dep.city || '공항'}${f.dep.iata ? ` (${f.dep.iata})` : ''}`);
       }
-      renderBox('');
+      renderBox(f.offDay ? '이 날짜 요일에는 정기 운항편이 없어서 가장 가까운 시간표로 채웠어요. 항공권의 시각과 비교해 보세요.' : '정기 운항 시간표 기준이에요. 출발 전 실시간 운항 정보로 지연 여부를 확인하세요.');
       PQ.toast('항공편 정보를 채웠어요');
     } catch (err) {
       const why = {
