@@ -140,7 +140,7 @@
   const dayList = () => PQ.state.days[PQ.currentDay] || [];
 
   function cssVar(name) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#4f46e5';
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#324680';
   }
 
   function ensureMap() {
@@ -410,7 +410,7 @@
   $('#btnSearch').addEventListener('click', async () => {
     const q = $('#fPlace').value.trim();
     const ul = $('#searchResults');
-    if (!q) { PQ.toast('장소명을 먼저 입력하세요'); $('#fPlace').focus(); return; }
+    if (!q) { PQ.toast('장소명이나 주소를 먼저 입력하세요'); $('#fPlace').focus(); return; }
     if (searchBusy) return;
     searchBusy = true;
     $('#btnSearch').disabled = true;
@@ -419,7 +419,7 @@
     try {
       const res = await searchPlace(q, PQ.state);
       if (!res.length) {
-        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 영어 이름으로 찾거나 좌표를 직접 넣어주세요.</li>';
+        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 주소를 더 자세히 쓰거나 영어 이름으로 다시 검색해 보세요.</li>';
         return;
       }
       ul.innerHTML = res.map((r, i) => {
@@ -432,11 +432,12 @@
         const r = res[Number(li.dataset.i)];
         $('#fLat').value = Number(r.lat).toFixed(6);
         $('#fLng').value = Number(r.lon).toFixed(6);
+        PQ.setPickedAddr(String(r.display_name || ''));
         ul.hidden = true;
-        PQ.toast('좌표를 넣었어요');
+        PQ.toast('주소를 넣었어요');
       };
     } catch (err) {
-      ul.innerHTML = '<li class="sr-msg">검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하거나 좌표를 직접 넣어주세요.</li>';
+      ul.innerHTML = '<li class="sr-msg">주소 검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하거나 아래 좌표 직접 입력을 써 주세요.</li>';
     } finally {
       searchBusy = false;
       $('#btnSearch').disabled = false;

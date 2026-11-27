@@ -1,52 +1,54 @@
 /* Layout: 폰 한 화면 앱. .device가 고정 요소의 기준(transform), .screen이 스크롤 영역.
    데스크톱 넓은 화면에서는 .device가 폰 프레임으로 표시됨. */
 :root {
-  --bg: #f7f8fc;
+  /* 강조색: #324680 한 가지 색을 명도만 바꿔 씀 */
+  --bg: #f6f7fa;
   --surface: #ffffff;
-  --text: #1a1d2e;
-  --muted: #6b7086;
-  --line: #e5e7f0;
-  --primary: #4f46e5;
+  --text: #1d2433;
+  --muted: #6a7285;
+  --line: #e3e6ee;
+  --primary: #324680;
   --on-primary: #ffffff;
-  --primary-soft: #eceefe;
-  --accent: #3b6ef5;
-  --accent-glow: rgba(59,110,245,.35);
+  --primary-soft: #e9edf6;
+  --accent: #4f639c;
+  --accent-glow: rgba(50,70,128,.28);
   --bar-bg: #ffffff;
-  --bar-fg: #1a1d2e;
-  --bar-btn: #f1f2f8;
-  --sample-bg: #eef1ff;
-  --sample-fg: #3730a3;
+  --bar-fg: #1d2433;
+  --bar-btn: #f0f2f7;
+  --sample-bg: #eef1f8;
+  --sample-fg: #324680;
   --danger: #d6453d;
-  --toast-bg: rgba(26,29,46,.92);
-  --desk-bg: #dde1ee;
-  --frame: #1a1d2e;
-  --shadow: 0 1px 3px rgba(30,34,70,.07), 0 4px 12px rgba(30,34,70,.04);
+  --toast-bg: rgba(29,36,51,.92);
+  --desk-bg: #dfe3ec;
+  --frame: #1d2433;
+  --shadow: 0 1px 3px rgba(29,36,64,.07), 0 4px 12px rgba(29,36,64,.04);
   --tabbar-h: 54px; /* iOS 탭바 49pt + 여유 */
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1117; --surface: #191c26; --text: #e8eaf3; --muted: #9298ad; --line: #2a2e3c;
-    --primary: #8b8ffb; --on-primary: #14154a; --primary-soft: #23264d;
-    --accent: #6d9bff; --accent-glow: rgba(109,155,255,.35);
-    --bar-bg: #151821; --bar-fg: #e8eaf3; --bar-btn: #232735;
-    --sample-bg: #1f2347; --sample-fg: #c3c7ff; --toast-bg: rgba(232,234,243,.94);
-    --desk-bg: #07080c; --frame: #000000; --shadow: 0 1px 3px rgba(0,0,0,.5);
+    --bg: #10131a; --surface: #1a1f2a; --text: #e6e9f0; --muted: #949bad; --line: #2b313e;
+    --primary: #93a5d4; --on-primary: #141c33; --primary-soft: #222b40;
+    --accent: #7f93c6; --accent-glow: rgba(127,147,198,.3);
+    --bar-bg: #161a23; --bar-fg: #e6e9f0; --bar-btn: #252b38;
+    --sample-bg: #1e2638; --sample-fg: #bac6e4; --toast-bg: rgba(230,233,240,.94);
+    --desk-bg: #07090d; --frame: #000000; --shadow: 0 1px 3px rgba(0,0,0,.5);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f1117; --surface: #191c26; --text: #e8eaf3; --muted: #9298ad; --line: #2a2e3c;
-  --primary: #8b8ffb; --on-primary: #14154a; --primary-soft: #23264d;
-  --accent: #6d9bff; --accent-glow: rgba(109,155,255,.35);
-  --bar-bg: #151821; --bar-fg: #e8eaf3; --bar-btn: #232735;
-  --sample-bg: #1f2347; --sample-fg: #c3c7ff; --toast-bg: rgba(232,234,243,.94);
-  --desk-bg: #07080c; --frame: #000000; --shadow: 0 1px 3px rgba(0,0,0,.5);
+  --bg: #10131a; --surface: #1a1f2a; --text: #e6e9f0; --muted: #949bad; --line: #2b313e;
+  --primary: #93a5d4; --on-primary: #141c33; --primary-soft: #222b40;
+  --accent: #7f93c6; --accent-glow: rgba(127,147,198,.3);
+  --bar-bg: #161a23; --bar-fg: #e6e9f0; --bar-btn: #252b38;
+  --sample-bg: #1e2638; --sample-fg: #bac6e4; --toast-bg: rgba(230,233,240,.94);
+  --desk-bg: #07090d; --frame: #000000; --shadow: 0 1px 3px rgba(0,0,0,.5);
   color-scheme: dark;
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
 html, body { margin: 0; height: 100%; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
@@ -329,7 +331,12 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .info-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
 .info-actions .btn { text-align: center; text-decoration: none; display: block; }
 .info-actions .btn[hidden] { display: none; }
-.btn.grab { background: #00b14f; color: #fff; }
+.btn.grab { background: var(--primary); color: var(--on-primary); }
+.info-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+.info-head h2 { flex: 1; min-width: 0; margin: 4px 0 0; word-break: break-word; }
+.info-head-btns { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+.info-head-btns .btn.small { padding: 7px 12px; font-size: 13px; }
+.icon-close { width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--bar-btn); color: var(--muted); font-size: 14px; line-height: 1; }
 
 /* 장소 검색 */
 .search-row { display: flex; gap: 8px; margin: 4px 0 10px; }
@@ -558,9 +565,7 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .page {
   position: absolute; inset: 0; z-index: 40; background: var(--bg);
   overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column;
-  scrollbar-width: none;
 }
-.page::-webkit-scrollbar { display: none; }
 .page[hidden] { display: none; }
 .statusbar { z-index: 45; }
 .island { z-index: 46; }
@@ -706,3 +711,21 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .pr-main small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .pr-tag { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--sample-bg); color: var(--sample-fg); }
 .pr-tag.new { background: var(--primary-soft); color: var(--primary); }
+
+/* ---------- 주소 검색 · 항공편 ---------- */
+.addr-picked { margin: -4px 0 12px; font-size: 12px; color: var(--muted); line-height: 1.4; word-break: break-word; }
+.coord-more { margin: 4px 0 12px; }
+.coord-more summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 6px 0; }
+.coord-more[open] summary { margin-bottom: 8px; }
+.opt { color: var(--muted); font-weight: 400; }
+.flight-box { margin: -4px 0 12px; padding: 10px 12px; border-radius: 12px; background: var(--primary-soft); font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+.fb-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fb-status { margin-left: auto; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface); color: var(--primary); }
+.fb-end { display: grid; grid-template-columns: 34px 48px minmax(0, 1fr); align-items: baseline; gap: 6px; }
+.fb-end .fb-l { color: var(--muted); font-size: 12px; }
+.fb-end b { color: var(--primary); font-variant-numeric: tabular-nums; font-size: 15px; }
+.fb-note, .fb-msg { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.fb-link { font-size: 12px; color: var(--primary); font-weight: 600; text-decoration: none; }
+.flight-line { margin-top: 2px; font-size: 12px; color: var(--primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+.flight-line small { font-size: 10px; vertical-align: 2px; }
+.key-steps { margin: 0 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.6; }

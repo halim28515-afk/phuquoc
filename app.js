@@ -132,6 +132,7 @@
         <div class="time${it.time ? '' : ' none'}">${it.time || '--:--'}</div>
         <div class="body">
           <div class="place">${esc(it.place)}</div>
+          ${it.flight && PQ.flight ? PQ.flight.cardLine(it.flight) : ''}
           ${it.memo ? `<div class="memo">${esc(it.memo)}</div>` : ''}
           ${window.PQ && PQ.linkedSpent ? PQ.linkedSpent(it.id) : ''}
         </div>
@@ -225,6 +226,9 @@
     $('#fMemo').value = item ? item.memo : '';
     $('#fLat').value = item && item.lat !== null ? item.lat : '';
     $('#fLng').value = item && item.lng !== null ? item.lng : '';
+    setPickedAddr(item ? item.addr || '' : '');
+    $('#coordMore').open = false;
+    if (PQ.flight) PQ.flight.load(item);
     const sr = $('#searchResults');
     if (sr) { sr.innerHTML = ''; sr.hidden = true; }
     openSheet('#editSheet');
@@ -239,6 +243,18 @@
     }
     return null;
   }
+
+  // 주소 검색으로 고른 주소 (좌표만 있으면 그렇게 표시)
+  let pickedAddr = '';
+  function setPickedAddr(addr) {
+    pickedAddr = addr;
+    const el = $('#fAddrPicked');
+    const hasCoord = $('#fLat').value.trim() && $('#fLng').value.trim();
+    el.textContent = addr ? '📍 ' + addr : hasCoord ? '📍 위치 있음 (좌표로 저장됨)' : '';
+    el.hidden = !el.textContent;
+  }
+  // 좌표를 손으로 바꾸면 검색한 주소와 달라지므로 주소는 지움
+  ['#fLat', '#fLng'].forEach(s => $(s).addEventListener('input', () => setPickedAddr('')));
 
   // "10.2167, 103.96" 형태 붙여넣기 → 위도/경도 분리
   function splitCoordPaste(e) {
@@ -281,18 +297,25 @@
 
     const date = $('#fDate').value;
     const data = { time: $('#fTime').value, place, memo: $('#fMemo').value.trim(), lat, lng };
+    data.addr = lat !== null && pickedAddr ? pickedAddr.slice(0, 200) : undefined;
+    data.flight = PQ.flight ? PQ.flight.read() : undefined;
 
     if (editingId) {
       const found = findItem(editingId);
       if (found) {
         Object.assign(found.item, data);
+        if (!data.addr) delete found.item.addr;
+        if (!data.flight) delete found.item.flight;
         if (found.date !== date) {
           state.days[found.date].splice(found.i, 1);
           (state.days[date] = state.days[date] || []).push(found.item);
         }
       }
     } else {
-      (state.days[date] = state.days[date] || []).push(Object.assign({ id: uid() }, data));
+      const fresh = Object.assign({ id: uid() }, data);
+      if (!fresh.addr) delete fresh.addr;
+      if (!fresh.flight) delete fresh.flight;
+      (state.days[date] = state.days[date] || []).push(fresh);
     }
     save();
     currentDay = date;
@@ -485,6 +508,7 @@
     tripDates, allDates, dateOptions, esc, dayInfo, toast, ask, save, render, findItem,
     switchTrip, clearTrip, selectTab, showExport, showImport, saveFile,
     openEditor: item => openEditor(item),
+    setPickedAddr: addr => setPickedAddr(addr),
     openSheet, closeSheet,
     onRender: fn => renderHooks.push(fn),
   };

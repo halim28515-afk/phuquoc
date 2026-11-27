@@ -72,7 +72,27 @@
         memo: String(it.memo || '').slice(0, 500),
         lat: toNum(it.lat),
         lng: toNum(it.lng),
+        ...(it.addr ? { addr: String(it.addr).slice(0, 200) } : {}),
+        ...(normFlight(it.flight) ? { flight: normFlight(it.flight) } : {}),
       }));
+  }
+
+  // 항공편: { no, airline, status, dep: {iata, city, date, time, terminal}, arr: {...} }
+  function normFlight(f) {
+    if (!f || typeof f !== 'object') return null;
+    const no = String(f.no || '').toUpperCase().replace(/\s+/g, '').slice(0, 8);
+    if (!no) return null;
+    const s = (v, n) => String(v || '').slice(0, n);
+    const end = e => (e && typeof e === 'object') ? {
+      iata: s(e.iata, 4), city: s(e.city, 40), date: /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : '',
+      time: /^\d{2}:\d{2}$/.test(e.time) ? e.time : '', terminal: s(e.terminal, 10),
+    } : null;
+    const out = { no };
+    if (f.airline) out.airline = s(f.airline, 40);
+    if (f.status) out.status = s(f.status, 30);
+    if (end(f.dep)) out.dep = end(f.dep);
+    if (end(f.arr)) out.arr = end(f.arr);
+    return out;
   }
 
   // 예전 환율 설정({krw,vnd} 또는 pairs.KV/UV/KU) → 새 형식(pairs.KL/UL/KU)
