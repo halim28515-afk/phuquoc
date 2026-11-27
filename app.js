@@ -131,8 +131,7 @@
     return out;
   }
   function flightText(f) {
-    const route = f.dep || f.arr ? ` ${[f.dep && f.dep.iata, f.arr && f.arr.iata].filter(Boolean).join('→')}` : '';
-    return `${f.no}${f.dep && f.dep.time ? ' ' + f.dep.time : ''}${route}`;
+    return `${f.no}${f.dep && f.dep.time ? ' ' + f.dep.time : ''}`; // 한 줄에 들어가게 편명·출발시각만
   }
 
   function renderHead() {

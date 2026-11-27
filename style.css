@@ -153,8 +153,9 @@ main { padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 90px); }
 .day-head {
   margin: 8px 16px 4px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; font-size: 13px;
 }
-.dh-box { min-width: 0; padding: 8px 12px; background: var(--primary-soft); border-radius: 12px; display: flex; flex-direction: column; gap: 2px; }
-.dh-box .dh-l { font-size: 11px; color: var(--muted); }
+.dh-box { min-width: 0; padding: 8px 12px; background: var(--primary-soft); border-radius: 12px; display: flex; align-items: baseline; gap: 6px; }
+.dh-box .dh-l { flex: 0 0 auto; font-size: 11px; color: var(--muted); }
+.dh-box b { min-width: 0; }
 .dh-box b { color: var(--primary); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .dh-box.none b { color: var(--muted); font-weight: 500; }
 
