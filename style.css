@@ -764,3 +764,4 @@ input[type="time"]::-webkit-calendar-picker-indicator, input[type="date"]::-webk
 }
 .search-results .sr-by { font-size: 10px; text-align: right; padding: 4px 12px 6px; }
 .search-results li.loading { opacity: .5; }
+.search-results .sr-err { white-space: pre-line; word-break: break-word; user-select: text; -webkit-user-select: text; }

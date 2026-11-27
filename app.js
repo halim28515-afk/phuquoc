@@ -233,8 +233,8 @@
     const dates = allDates();
     if (selected && !dates.includes(selected)) dates.push(selected);
     return dates.map(date => {
-      const { m, d, wd, idx } = dayInfo(date);
-      return `<option value="${date}"${date === selected ? ' selected' : ''}>${idx >= 0 ? 'D' + (idx + 1) + ' · ' : ''}${m}/${d}(${wd})</option>`;
+      const { m, d, wd } = dayInfo(date);
+      return `<option value="${date}"${date === selected ? ' selected' : ''}>${m}/${d} (${wd})</option>`;
     }).join('');
   }
 

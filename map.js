@@ -510,9 +510,15 @@
     try { r = await fetch(url, Object.assign({ signal: ctrl.signal }, opts)); }
     catch (e) { throw gFail('net'); }
     finally { clearTimeout(timer); }
-    if (r.status === 400 || r.status === 401 || r.status === 403) throw gFail('auth');
-    if (r.status === 429) throw gFail('limit');
-    if (!r.ok) throw gFail('http');
+    if (!r.ok) {
+      // 구글이 알려준 이유(영어)를 그대로 보여줘서 원인을 알 수 있게
+      const j = await r.json().catch(() => null);
+      const g = j && j.error ? j.error : {};
+      const reason = [g.status, (g.details || []).map(d => d.reason).filter(Boolean).join(','), g.message].filter(Boolean).join(' · ');
+      const e = gFail(r.status === 429 ? 'limit' : (r.status === 400 || r.status === 401 || r.status === 403) ? 'auth' : 'http');
+      e.detail = `HTTP ${r.status}${reason ? ' · ' + reason : ''}`;
+      throw e;
+    }
     return r.json();
   }
 
@@ -550,11 +556,11 @@
       name: (j.displayName && j.displayName.text) || '',
     };
   }
-  const gMsg = code => ({
+  const gMsg = (code, detail) => ({
     auth: '구글 API 키를 확인하세요. 구글 클라우드에서 Places API (New)가 켜져 있어야 해요.',
     limit: '구글 검색 사용량 한도를 넘었어요. 잠시 뒤 다시 해 주세요.',
     net: '구글 검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하세요.',
-  }[code] || '구글 검색 중 문제가 생겼어요.');
+  }[code] || '구글 검색 중 문제가 생겼어요.') + (detail ? `\n(구글 응답: ${detail})` : '');
 
   // 검색 결과·추천 목록을 보여주고, 고르면 위치와 주소를 넣음
   function showResults(res, title, google) {
@@ -576,7 +582,7 @@
           r = Object.assign({}, r, d, { name: d.name || r.name, display_name: d.display_name || r.display_name });
         } catch (err) {
           li.classList.remove('loading');
-          PQ.toast(gMsg(err.code));
+          PQ.toast(gMsg(err.code, err.detail));
           return;
         }
       }
@@ -637,7 +643,7 @@
           const res = await gAutocomplete(q, PQ.state.center);
           if (res.length) { showResults(res, '', true); return; }
         } catch (err) {
-          ul.innerHTML = `<li class="sr-msg">${esc(gMsg(err.code))}</li>`;
+          ul.innerHTML = `<li class="sr-msg sr-err">${esc(gMsg(err.code, err.detail))}</li>`;
           return;
         }
       }
