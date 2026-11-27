@@ -57,7 +57,10 @@
           <p>아직 일정이 없어요.</p>
           <p class="muted">오른쪽 아래 <b>+</b> 버튼으로 추가하세요.</p>
         </div>
-        <p class="map-credit">거리·시간: OSRM · 장소 검색: Nominatim · 지도 © OpenStreetMap</p>
+        <div class="list-foot" id="listFoot" hidden>
+          <button type="button" class="btn ghost small" id="btnSortTime">시간순 정렬</button>
+        </div>
+        <p class="map-credit">거리·시간 OSRM · 장소 검색 Photon·Nominatim · 지도 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
       </section>
 
       <!-- 환전 -->
@@ -81,10 +84,10 @@
               <span class="fx-input"><span class="unit pre">$</span><input id="fxUsd" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="0"></span>
             </label>
             <div class="fx-quick four" id="fxQuickUsd">
-              <button type="button" data-cur="USD" data-v="10">$10</button>
-              <button type="button" data-cur="USD" data-v="20">$20</button>
-              <button type="button" data-cur="USD" data-v="50">$50</button>
-              <button type="button" data-cur="USD" data-v="100">$100</button>
+              <button type="button" data-cur="USD" data-v="10">10</button>
+              <button type="button" data-cur="USD" data-v="20">20</button>
+              <button type="button" data-cur="USD" data-v="50">50</button>
+              <button type="button" data-cur="USD" data-v="100">100</button>
             </div>
           </div>
 
@@ -376,12 +379,11 @@
     <div class="sheet">
       <div class="sheet-grip"></div>
       <h2>이 여행</h2>
-      <button class="sheet-item" id="btnFileImport">📄 일정 파일 가져오기 (엑셀·CSV)</button>
-      <button class="sheet-item" id="btnSortTime">⏱️ 이 날 일정 시간순 정렬</button>
-      <button class="sheet-item" id="btnFare">🚕 그랩 요금 기준 설정</button>
-      <button class="sheet-item" id="btnFlightKey">✈️ 항공편 자동 조회 설정</button>
-      <button class="sheet-item" id="btnExport">⬇️ 이 여행 JSON 내보내기 (다른 폰과 공유)</button>
-      <button class="sheet-item danger" id="btnClearDay">🗑️ 이 날 일정 모두 삭제</button>
+      <button class="sheet-item" id="btnFileImport">일정 파일 가져오기 (엑셀·CSV)</button>
+      <button class="sheet-item" id="btnFare">그랩 요금 기준 설정</button>
+      <button class="sheet-item" id="btnFlightKey">항공편 자동 조회 설정</button>
+      <button class="sheet-item" id="btnExport">이 여행 JSON 내보내기 (다른 폰과 공유)</button>
+      <button class="sheet-item danger" id="btnClearDay">이 날 일정 모두 삭제</button>
       <button class="sheet-item cancel" data-close>닫기</button>
     </div>
   </div>
@@ -422,16 +424,18 @@
     <form class="sheet" id="editForm" autocomplete="off">
       <div class="sheet-grip"></div>
       <h2 id="editTitle">일정 추가</h2>
-      <label>날짜
-        <select name="date" id="fDate"></select>
-      </label>
-      <label>시간
-        <input type="time" name="time" id="fTime">
-      </label>
+      <div class="row2">
+        <label>날짜
+          <select name="date" id="fDate"></select>
+        </label>
+        <label>시간
+          <input type="time" name="time" id="fTime">
+        </label>
+      </div>
       <label for="fPlace">장소명 <span class="req">*</span></label>
       <div class="search-row">
         <input type="text" name="place" id="fPlace" required maxlength="80" placeholder="장소명이나 주소">
-        <button type="button" class="btn ghost" id="btnSearch">🔍 주소 검색</button>
+        <button type="button" class="btn ghost" id="btnSearch">주소 검색</button>
       </div>
       <ul class="search-results" id="searchResults" hidden></ul>
       <p class="addr-picked" id="fAddrPicked" hidden></p>
@@ -439,7 +443,7 @@
         <label for="fFlight">항공편 <small class="opt">(선택)</small></label>
         <div class="search-row">
           <input type="text" id="fFlight" maxlength="8" placeholder="편명 예) VJ975" autocapitalize="characters" spellcheck="false">
-          <button type="button" class="btn ghost" id="btnFlight">✈️ 조회</button>
+          <button type="button" class="btn ghost" id="btnFlight">조회</button>
         </div>
         <div class="flight-box" id="flightBox" hidden></div>
       </div>

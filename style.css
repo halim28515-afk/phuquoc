@@ -230,9 +230,10 @@ main { padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 90px); }
   animation: up .2s ease-out;
 }
 .dialog {
-  width: 100%; max-width: 320px; background: var(--surface); border-radius: 16px; padding: 20px 16px 16px;
+  width: 300px; max-width: 100%; min-height: 168px; background: var(--surface); border-radius: 16px; padding: 20px 16px 16px;
+  display: flex; flex-direction: column;
 }
-.dialog p { margin: 0 0 4px; font-size: 15px; line-height: 1.5; word-break: keep-all; }
+.dialog p { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; margin: 0 0 12px; font-size: 15px; line-height: 1.5; word-break: keep-all; }
 @keyframes up { from { transform: translateY(40px); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
 .sheet-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 4px auto 10px; }
@@ -259,6 +260,11 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .req { color: var(--danger); }
 .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .row2 > * { min-width: 0; }
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%;
+  min-height: 46px; line-height: 1.2; text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .hint { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
 
 .btn {
@@ -275,9 +281,12 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%); z-index: 80;
   bottom: calc(var(--tabbar-h) + var(--safe-b) + 84px);
-  background: var(--toast-bg); color: var(--bg); padding: 10px 16px; border-radius: 999px;
-  font-size: 14px; max-width: calc(100% - 32px); text-align: center;
+  background: var(--toast-bg); color: var(--bg); padding: 10px 16px; border-radius: 16px;
+  width: 300px; max-width: calc(100% - 32px); min-height: 52px;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: 14px; line-height: 1.4; word-break: keep-all;
 }
+.toast[hidden] { display: none; }
 
 /* ---------- 지도 탭 ---------- */
 .map-wrap { position: relative; isolation: isolate; z-index: 0; margin: 8px 16px 0; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
@@ -311,7 +320,9 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .stop .st-time { flex: 0 0 44px; font-size: 13px; color: var(--primary); font-weight: 700; font-variant-numeric: tabular-nums; }
 .stop .st-place { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stop .st-leg { font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.map-credit { margin: 4px 16px 0; font-size: 11px; color: var(--muted); }
+.list-foot { display: flex; justify-content: center; margin: 12px 16px 0; }
+.map-credit { margin: 20px 16px 0; font-size: 11px; color: var(--muted); text-align: center; }
+.map-credit a { color: inherit; }
 
 /* 장소 정보 시트 */
 .sheet-backdrop.light { background: rgba(0,0,0,.18); }
@@ -342,7 +353,7 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 /* 장소 검색 */
 .search-row { display: flex; gap: 8px; margin: 4px 0 10px; }
 .search-row input { flex: 1; min-width: 0; margin-top: 0 !important; }
-.search-row .btn { flex: 0 0 auto; padding: 0 12px; font-size: 13px; }
+.search-row .btn { flex: 0 0 88px; padding: 0 8px; font-size: 13px; text-align: center; }
 .search-results { list-style: none; margin: -4px 0 12px; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .search-results[hidden] { display: none; }
 .search-results li { padding: 10px 12px; border-bottom: 1px solid var(--line); font-size: 13px; cursor: pointer; }
@@ -520,7 +531,7 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .card-exp { display: inline-flex; align-items: center; justify-content: center; color: var(--primary); padding: 0; }
 .card-exp .ico-dollar { width: 20px; height: 20px; display: block; }
 .card.sel { outline: 2px solid var(--primary); outline-offset: -2px; }
-.map-credit { margin-top: 2px; }
+
 .leaflet-control-attribution { font-size: 10px; line-height: 1.4; }
 
 /* 동선 탭: 날짜·숙박·지도 고정 */
@@ -731,3 +742,4 @@ form.sheet input:focus, form.sheet select:focus, form.sheet textarea:focus, .jso
 .flight-line small { font-size: 10px; vertical-align: 2px; }
 .key-steps { margin: 0 0 12px; padding-left: 20px; font-size: 13px; line-height: 1.6; }
 .ico-dollar.ico-inline { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; color: var(--primary); }
+.search-results .sr-title { font-size: 11px; font-weight: 700; color: var(--muted); padding: 8px 12px 4px; }

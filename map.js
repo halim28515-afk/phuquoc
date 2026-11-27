@@ -151,7 +151,7 @@
       return false;
     }
     const c = PQ.state.center;
-    map = L.map('map', { zoomControl: true, attributionControl: true }).setView(c || WORLD[0], c ? 11 : WORLD[1]);
+    map = L.map('map', { zoomControl: true, attributionControl: false }) // 출처는 페이지 맨 아래에 표시.setView(c || WORLD[0], c ? 11 : WORLD[1]);
     const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
@@ -270,7 +270,7 @@
           if (token !== infoToken) return;
           leg.innerHTML = `<div class="route">${pi}. ${esc(prev.place)} → ${i + 1}. ${esc(it.place)}</div>
             <div class="big">${fmtKm(r.km)} · ${fmtMin(r.min)}</div>
-            <div class="src">${r.src === 'osrm' ? '차량 도로 경로 기준 (OSRM)' : '경로 서버에 연결하지 못해 직선거리로 추정했어요'}</div>`;
+            <div class="src">${r.src === 'osrm' ? '차량 도로 경로 기준' : '경로 서버에 연결하지 못해 직선거리로 추정했어요'}</div>`;
           if (isGrab()) renderFares(r);
         });
       }
@@ -378,19 +378,102 @@
   }
 
   const wait = ms => new Promise(r => setTimeout(r, ms)); // Nominatim 이용 정책: 초당 1회
-  // "장소명 + 여행 목적지"로 먼저 찾고, 없으면 장소명만(그 나라 안 → 전체)
+
+  // ---------- 한국어 검색어 → 영어 (지도 데이터는 대부분 영어·현지어) ----------
+  const KO_WORDS = [
+    // 여행지
+    ['푸꾸옥', 'Phu Quoc'], ['다낭', 'Da Nang'], ['호치민', 'Ho Chi Minh'], ['하노이', 'Hanoi'], ['나트랑', 'Nha Trang'],
+    ['냐짱', 'Nha Trang'], ['호이안', 'Hoi An'], ['달랏', 'Da Lat'], ['하롱베이', 'Ha Long Bay'], ['사파', 'Sa Pa'], ['무이네', 'Mui Ne'],
+    ['방콕', 'Bangkok'], ['파타야', 'Pattaya'], ['푸켓', 'Phuket'], ['치앙마이', 'Chiang Mai'], ['끄라비', 'Krabi'], ['코사무이', 'Koh Samui'],
+    ['세부', 'Cebu'], ['보라카이', 'Boracay'], ['보홀', 'Bohol'], ['마닐라', 'Manila'], ['코타키나발루', 'Kota Kinabalu'],
+    ['쿠알라룸푸르', 'Kuala Lumpur'], ['싱가포르', 'Singapore'], ['발리', 'Bali'], ['자카르타', 'Jakarta'],
+    ['도쿄', 'Tokyo'], ['오사카', 'Osaka'], ['교토', 'Kyoto'], ['후쿠오카', 'Fukuoka'], ['삿포로', 'Sapporo'], ['오키나와', 'Okinawa'], ['나고야', 'Nagoya'],
+    ['타이베이', 'Taipei'], ['가오슝', 'Kaohsiung'], ['홍콩', 'Hong Kong'], ['마카오', 'Macau'], ['상하이', 'Shanghai'], ['베이징', 'Beijing'],
+    ['괌', 'Guam'], ['사이판', 'Saipan'], ['하와이', 'Hawaii'], ['호놀룰루', 'Honolulu'], ['시드니', 'Sydney'],
+    ['파리', 'Paris'], ['런던', 'London'], ['로마', 'Rome'], ['바르셀로나', 'Barcelona'], ['뉴욕', 'New York'],
+    ['인천', 'Incheon'], ['김포', 'Gimpo'], ['김해', 'Gimhae'], ['제주', 'Jeju'],
+    // 푸꾸옥 지명
+    ['즈엉동', 'Duong Dong'], ['안터이', 'An Thoi'], ['혼텀', 'Hon Thom'], ['사오비치', 'Sao Beach'], ['선셋타운', 'Sunset Town'],
+    ['그랜드월드', 'Grand World'], ['빈원더스', 'VinWonders'], ['빈펄', 'Vinpearl'], ['선월드', 'Sun World'], ['키스브릿지', 'Kiss Bridge'],
+    ['롱비치', 'Long Beach'], ['켐비치', 'Kem Beach'], ['옹랑', 'Ong Lang'], ['함닌', 'Ham Ninh'],
+    // 일반 단어 (긴 것부터 바뀌도록 정렬됨)
+    ['국제공항', 'International Airport'], ['공항', 'Airport'], ['터미널', 'Terminal'], ['야시장', 'Night Market'], ['시장', 'Market'],
+    ['해변', 'Beach'], ['비치', 'Beach'], ['리조트', 'Resort'], ['호텔', 'Hotel'], ['케이블카', 'Cable Car'], ['폭포', 'Waterfall'],
+    ['사원', 'Temple'], ['성당', 'Cathedral'], ['박물관', 'Museum'], ['공원', 'Park'], ['항구', 'Port'], ['선착장', 'Pier'],
+    ['기차역', 'Railway Station'], ['역', 'Station'], ['섬', 'Island'], ['쇼핑몰', 'Mall'], ['마트', 'Mart'], ['병원', 'Hospital'],
+    ['인터컨티넨탈', 'InterContinental'], ['그린베이', 'Green Bay'], ['노보텔', 'Novotel'], ['메리어트', 'Marriott'], ['힐튼', 'Hilton'],
+    ['쉐라톤', 'Sheraton'], ['하얏트', 'Hyatt'], ['롯데마트', 'Lotte Mart'], ['스타벅스', 'Starbucks'],
+  ].sort((a, b) => b[0].length - a[0].length);
+  const HANGUL = /[가-힣]/;
+  function koToEn(text) {
+    let s = String(text || '');
+    if (!HANGUL.test(s)) return s.trim();
+    KO_WORDS.forEach(([ko, en]) => { s = s.split(ko).join(` ${en} `); });
+    // 남은 한글 조사·꾸밈말(도착, 출발, 근처 등)은 검색에 방해돼서 뺌
+    s = s.split(/\s+/).filter(w => w && !HANGUL.test(w)).join(' ');
+    return s.trim();
+  }
+  PQ.koToEn = koToEn;
+
+  // ---------- Photon (입력하는 동안 추천 장소, 자동완성용 공개 검색) ----------
+  const PHOTON = 'https://photon.komoot.io/api/';
+  async function photon(q, near) {
+    const p = new URLSearchParams({ q, limit: '6', lang: 'en' });
+    if (near) { p.set('lat', near[0]); p.set('lon', near[1]); }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const r = await fetch(`${PHOTON}?${p}`, { signal: ctrl.signal });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      return (j.features || []).map(f => {
+        const pr = f.properties || {};
+        const c = (f.geometry && f.geometry.coordinates) || [];
+        const addr = [pr.name, [pr.housenumber, pr.street].filter(Boolean).join(' '), pr.district, pr.city, pr.state, pr.country]
+          .filter((v, i, a) => v && a.indexOf(v) === i).join(', ');
+        return { name: pr.name || addr.split(',')[0], display_name: addr, lat: c[1], lon: c[0] };
+      }).filter(r => typeof r.lat === 'number' && typeof r.lon === 'number');
+    } finally { clearTimeout(t); }
+  }
+
+  // 여행 목적지 이름(영어로 바꾼 것)
+  const destEn = trip => koToEn([trip.city, trip.country].filter(Boolean).join(' '));
+  // 한 장소가 여러 번 나오면 하나만
+  const uniqRes = list => {
+    const seen = new Set();
+    return list.filter(r => { const k = `${Number(r.lat).toFixed(4)},${Number(r.lon).toFixed(4)}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  };
+
+  // 검색 버튼: Photon으로 먼저 찾고, 없으면 Nominatim (영어로 바꾼 검색어 → 원래 검색어)
   async function searchPlace(place, trip) {
     const cc = TS.curOf(trip.currency).cc;
-    const dest = [trip.city, trip.country].filter(Boolean).join(' ');
+    const en = koToEn(place);
+    const dest = destEn(trip);
+    let netFail = 0, tried = 0;
+    const variants = [...new Set([en, place.trim()].filter(Boolean))];
+
+    for (const q of variants) {
+      tried++;
+      try {
+        const res = await photon(q, trip.center);
+        if (res.length) return uniqRes(res);
+      } catch (e) { netFail++; }
+    }
     const tries = [];
-    if (dest) tries.push([`${place} ${dest}`, { cc, near: trip.center }]);
-    tries.push([place, { cc, near: trip.center }]);
-    if (cc) tries.push([place, {}]);
+    variants.forEach(q => {
+      if (dest && !q.toLowerCase().includes(dest.toLowerCase())) tries.push([`${q} ${dest}`, { cc, near: trip.center }]);
+      tries.push([q, { cc, near: trip.center }]);
+    });
+    if (cc) tries.push([variants[0], {}]);
     for (let i = 0; i < tries.length; i++) {
       if (i) await wait(1100);
-      const res = await nominatim(tries[i][0], tries[i][1]);
-      if (res.length) return res;
+      tried++;
+      try {
+        const res = await nominatim(tries[i][0], tries[i][1]);
+        if (res.length) return uniqRes(res);
+      } catch (e) { netFail++; }
     }
+    if (netFail === tried) throw new Error('net');
     return [];
   }
   PQ.searchPlace = searchPlace;
@@ -402,7 +485,7 @@
     if (trip.center || trip.id === '__blank__' || geoTried.has(trip.id) || !trip.city) return;
     geoTried.add(trip.id);
     try {
-      const res = await nominatim([trip.city, trip.country].filter(Boolean).join(' '), { cc: TS.curOf(trip.currency).cc });
+      const res = await nominatim(destEn(trip) || [trip.city, trip.country].filter(Boolean).join(' '), { cc: TS.curOf(trip.currency).cc });
       if (res.length && TS.get(trip.id)) {
         trip.center = [Number(res[0].lat), Number(res[0].lon)];
         TS.save();
@@ -411,35 +494,66 @@
     } catch (e) { /* 오프라인이면 다음에 */ }
   }
 
+  // 검색 결과·추천 목록을 보여주고, 고르면 위치와 주소를 넣음
+  function showResults(res, title) {
+    const ul = $('#searchResults');
+    ul.hidden = false;
+    ul.innerHTML = (title ? `<li class="sr-msg sr-title">${esc(title)}</li>` : '') + res.map((r, i) => {
+      const name = r.name || String(r.display_name).split(',')[0];
+      return `<li data-i="${i}"><div class="sr-name">${esc(name)}</div><div class="sr-addr">${esc(r.display_name)}</div></li>`;
+    }).join('');
+    ul.onclick = e => {
+      const li = e.target.closest('li[data-i]');
+      if (!li) return;
+      const r = res[Number(li.dataset.i)];
+      $('#fLat').value = Number(r.lat).toFixed(6);
+      $('#fLng').value = Number(r.lon).toFixed(6);
+      PQ.setPickedAddr(String(r.display_name || ''));
+      // 장소명이 비어 있으면 고른 장소 이름으로
+      if (!$('#fPlace').value.trim()) $('#fPlace').value = r.name || '';
+      ul.hidden = true;
+      suggestRun++; // 진행 중인 추천은 무시
+      PQ.toast('주소를 넣었어요');
+    };
+  }
+
+  // 입력하는 동안 추천 장소 (0.5초 멈추면 검색)
+  let suggestTimer = null, suggestRun = 0;
+  $('#fPlace').addEventListener('input', () => {
+    clearTimeout(suggestTimer);
+    const q = $('#fPlace').value.trim();
+    const run = ++suggestRun;
+    if (q.length < 2) { $('#searchResults').hidden = true; return; }
+    suggestTimer = setTimeout(async () => {
+      const en = koToEn(q);
+      if (!en) return;
+      let res = [];
+      try { res = await photon(en, PQ.state.center); } catch (e) { return; } // 오프라인이면 조용히
+      if (run !== suggestRun || searchBusy) return;
+      if (!res.length) { $('#searchResults').hidden = true; return; }
+      showResults(uniqRes(res), en !== q ? `추천 장소 · "${en}"로 찾았어요` : '추천 장소');
+    }, 500);
+  });
+
   $('#btnSearch').addEventListener('click', async () => {
     const q = $('#fPlace').value.trim();
     const ul = $('#searchResults');
     if (!q) { PQ.toast('장소명이나 주소를 먼저 입력하세요'); $('#fPlace').focus(); return; }
     if (searchBusy) return;
     searchBusy = true;
+    suggestRun++;
+    clearTimeout(suggestTimer);
     $('#btnSearch').disabled = true;
     ul.hidden = false;
+    ul.onclick = null;
     ul.innerHTML = '<li class="sr-msg">검색 중…</li>';
     try {
       const res = await searchPlace(q, PQ.state);
       if (!res.length) {
-        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 주소를 더 자세히 쓰거나 영어 이름으로 다시 검색해 보세요.</li>';
+        ul.innerHTML = '<li class="sr-msg">검색 결과가 없어요. 장소 이름을 영어로 쓰거나 주소를 더 자세히 써 보세요.</li>';
         return;
       }
-      ul.innerHTML = res.map((r, i) => {
-        const name = r.name || String(r.display_name).split(',')[0];
-        return `<li data-i="${i}"><div class="sr-name">${esc(name)}</div><div class="sr-addr">${esc(r.display_name)}</div></li>`;
-      }).join('');
-      ul.onclick = e => {
-        const li = e.target.closest('li[data-i]');
-        if (!li) return;
-        const r = res[Number(li.dataset.i)];
-        $('#fLat').value = Number(r.lat).toFixed(6);
-        $('#fLng').value = Number(r.lon).toFixed(6);
-        PQ.setPickedAddr(String(r.display_name || ''));
-        ul.hidden = true;
-        PQ.toast('주소를 넣었어요');
-      };
+      showResults(res);
     } catch (err) {
       ul.innerHTML = '<li class="sr-msg">주소 검색 서버에 연결하지 못했어요. 인터넷 연결을 확인하거나 아래 좌표 직접 입력을 써 주세요.</li>';
     } finally {

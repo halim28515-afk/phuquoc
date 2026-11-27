@@ -152,7 +152,8 @@
   // 빠른 버튼 라벨: 10만 동, 500 바트, $10
   function quickLabel(code, v) {
     const c = TS.curOf(code);
-    if (['USD', 'SGD', 'AUD', 'HKD', 'TWD', 'EUR', 'GBP', 'MYR', 'CNY'].includes(code)) return c.sym + fmtNum(code, v);
+    if (code === 'USD') return fmtNum(code, v); // 입력칸에 $가 있어서 버튼엔 숫자만
+    if (['SGD', 'AUD', 'HKD', 'TWD', 'EUR', 'GBP', 'MYR', 'CNY'].includes(code)) return c.sym + fmtNum(code, v);
     if (v >= 10000 && v % 10000 === 0) return `${fmt(v / 10000)}만 ${c.unit}`;
     return `${fmt(v)} ${c.unit}`;
   }
@@ -230,12 +231,12 @@
       const when = fmtTime(cache.fetchedAt);
       msg = liveState === 'failed'
         ? `새 환율을 못 받아 ${when}에 저장한 환율을 쓰고 있어요`
-        : `open.er-api.com · ${when} 받음 · 하루 1번 갱신`;
+        : `${when} 갱신`;
       if (liveState === 'failed') st.classList.add('warn');
     }
     if (wantManual) {
       const label = { KL: `원 → ${c.unit}`, UL: `달러 → ${c.unit}`, KU: '원 → 달러' };
-      msg = (usedPairs.length ? `내 환율 적용: ${usedPairs.map(k => label[k]).join(', ')}. 나머지는 ` : '아래에 환전 금액을 넣으면 그 환율로 계산해요. 지금은 ') + msg;
+      msg = usedPairs.length ? `내 환율 적용: ${usedPairs.map(k => label[k]).join(', ')}` : '아래에 환전 금액을 넣으면 그 환율로 계산해요.';
     }
     st.innerHTML = '';
     const span = document.createElement('span');

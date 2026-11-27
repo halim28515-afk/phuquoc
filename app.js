@@ -143,6 +143,7 @@
         </div>
       </li>`).join('');
     $('#emptyState').hidden = list.length > 0;
+    $('#listFoot').hidden = list.length < 2;
     $('#sampleBanner').hidden = !state.sample;
   }
 
@@ -400,7 +401,6 @@
       return a.it.time.localeCompare(b.it.time) || a.i - b.i;
     }).map(x => x.it);
     save();
-    closeSheet('#menuSheet');
     render();
     toast('시간순으로 정렬했어요');
   });
